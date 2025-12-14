@@ -1,0 +1,133 @@
+{
+  "name": "claude-autocomplete",
+  "displayName": "Claude Autocomplete",
+  "description": "AI-powered code completions using Claude API for JavaScript, TypeScript, and Dart",
+  "version": "0.1.0",
+  "publisher": "anthropic",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "AI"
+  ],
+  "keywords": [
+    "claude",
+    "ai",
+    "autocomplete",
+    "javascript",
+    "typescript",
+    "dart",
+    "flutter"
+  ],
+  "main": "./out/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anthropics/claude-autocomplete"
+  },
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescriptreact",
+    "onLanguage:dart"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^3.7.1",
+    "typescript": "^5.3.0"
+  },
+  "contributes": {
+    "configuration": {
+      "title": "Claude Autocomplete",
+      "properties": {
+        "claudeAutocomplete.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic API key",
+          "markdownDescription": "Your Anthropic API key. Get one at https://console.anthropic.com"
+        },
+        "claudeAutocomplete.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable Claude autocomplete for JS/TS/Dart"
+        },
+        "claudeAutocomplete.model": {
+          "type": "string",
+          "default": "claude-sonnet-4-20250514",
+          "description": "Claude model to use"
+        },
+        "claudeAutocomplete.maxTokens": {
+          "type": "number",
+          "default": 300,
+          "minimum": 100,
+          "maximum": 1000,
+          "description": "Maximum tokens for completion"
+        },
+        "claudeAutocomplete.temperature": {
+          "type": "number",
+          "default": 0.2,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Temperature for completions (0=deterministic, 1=creative)"
+        },
+        "claudeAutocomplete.debounceDelay": {
+          "type": "number",
+          "default": 300,
+          "minimum": 100,
+          "maximum": 2000,
+          "description": "Delay in ms before requesting completion"
+        },
+        "claudeAutocomplete.contextLinesBefore": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 100,
+          "description": "Number of lines before cursor to include as context"
+        },
+        "claudeAutocomplete.contextLinesAfter": {
+          "type": "number",
+          "default": 10,
+          "minimum": 0,
+          "maximum": 50,
+          "description": "Number of lines after cursor to include as context"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "claudeAutocomplete.setApiKey",
+        "title": "Claude: Set API Key"
+      },
+      {
+        "command": "claudeAutocomplete.toggleEnabled",
+        "title": "Claude: Toggle Autocomplete"
+      },
+      {
+        "command": "claudeAutocomplete.clearCache",
+        "title": "Claude: Clear Completion Cache"
+      },
+      {
+        "command": "claudeAutocomplete.triggerCompletion",
+        "title": "Claude: Trigger Completion Manually"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "claudeAutocomplete.triggerCompletion",
+        "key": "ctrl+shift+space",
+        "mac": "cmd+shift+space",
+        "when": "editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "node ./out/test/runTest.js"
+  }
+}

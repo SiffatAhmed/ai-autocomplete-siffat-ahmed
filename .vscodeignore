@@ -1,0 +1,10 @@
+.gitignore
+.git
+node_modules
+out/test/**
+*.vsix
+**/*.map
+src/
+tsconfig.json
+package-lock.json
+.DS_Store
