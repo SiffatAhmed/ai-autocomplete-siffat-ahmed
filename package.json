@@ -1,9 +1,10 @@
 {
-  "name": "claude-autocomplete",
-  "displayName": "Claude Autocomplete",
+  "name": "ai-autocomplete-siffat-ahmed",
+  "displayName": "AI Autocomplete (Claude)",
   "description": "AI-powered code completions using Claude API for JavaScript, TypeScript, and Dart",
+  "icon": "my-extension-icon.png",
   "version": "0.1.0",
-  "publisher": "anthropic",
+  "publisher": "siffat-ahmed",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
@@ -57,7 +58,7 @@
         },
         "claudeAutocomplete.model": {
           "type": "string",
-          "default": "claude-sonnet-4-20250514",
+          "default": "claude-3-5-haiku-20241022",
           "description": "Claude model to use"
         },
         "claudeAutocomplete.maxTokens": {
@@ -101,6 +102,10 @@
       {
         "command": "claudeAutocomplete.setApiKey",
         "title": "Claude: Set API Key"
+      },
+      {
+        "command": "claudeAutocomplete.selectModel",
+        "title": "Claude: Select Model"
       },
       {
         "command": "claudeAutocomplete.toggleEnabled",

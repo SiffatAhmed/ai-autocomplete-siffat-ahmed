@@ -1,4 +1,4 @@
-# Claude Autocomplete for VS Code
+# AI Autocomplete for VS Code
 
 AI-powered inline code completions using Claude API for JavaScript, TypeScript, and Dart.
 
@@ -17,16 +17,6 @@ AI-powered inline code completions using Claude API for JavaScript, TypeScript, 
 - TypeScript (`.ts`, `.tsx`)
 - Dart (`.dart`) - Great for Flutter development!
 
-## Installation
-
-1. Install the extension from VS Code Marketplace (when published)
-2. Or build from source:
-   ```bash
-   npm install
-   npm run compile
-   # Then use "Run Extension" from VS Code debug menu
-   ```
-
 ## Setup
 
 ### 1. Get an API Key
@@ -39,11 +29,13 @@ AI-powered inline code completions using Claude API for JavaScript, TypeScript, 
 ### 2. Configure the Extension
 
 **Option A: Via Command Palette**
+
 1. Open VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
 2. Run `Claude: Set API Key`
 3. Paste your API key when prompted
 
 **Option B: Via Settings**
+
 1. Open Settings (`Ctrl+,` / `Cmd+,`)
 2. Search for "Claude Autocomplete"
 3. Paste your API key in the `claudeAutocomplete.apiKey` field
@@ -53,6 +45,7 @@ AI-powered inline code completions using Claude API for JavaScript, TypeScript, 
 ### Automatic Completions
 
 Completions appear automatically as you type in supported languages. The extension:
+
 - Extracts context around your cursor
 - Sends it to Claude API
 - Displays suggestions inline
@@ -75,15 +68,15 @@ Available commands in the Command Palette:
 
 Open Settings and search for "Claude Autocomplete" to customize:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `claudeAutocomplete.enabled` | `true` | Enable/disable completions |
-| `claudeAutocomplete.model` | `claude-sonnet-4-20250514` | Model to use |
-| `claudeAutocomplete.maxTokens` | `300` | Max tokens per completion (100-1000) |
-| `claudeAutocomplete.temperature` | `0.2` | Determinism (0=exact, 1=creative) |
-| `claudeAutocomplete.debounceDelay` | `300` | Wait time (ms) before requesting (100-2000) |
-| `claudeAutocomplete.contextLinesBefore` | `30` | Context lines before cursor (10-100) |
-| `claudeAutocomplete.contextLinesAfter` | `10` | Context lines after cursor (0-50) |
+| Setting                                 | Default                    | Description                                 |
+| --------------------------------------- | -------------------------- | ------------------------------------------- |
+| `claudeAutocomplete.enabled`            | `true`                     | Enable/disable completions                  |
+| `claudeAutocomplete.model`              | `claude-sonnet-4-20250514` | Model to use                                |
+| `claudeAutocomplete.maxTokens`          | `300`                      | Max tokens per completion (100-1000)        |
+| `claudeAutocomplete.temperature`        | `0.2`                      | Determinism (0=exact, 1=creative)           |
+| `claudeAutocomplete.debounceDelay`      | `300`                      | Wait time (ms) before requesting (100-2000) |
+| `claudeAutocomplete.contextLinesBefore` | `30`                       | Context lines before cursor (10-100)        |
+| `claudeAutocomplete.contextLinesAfter`  | `10`                       | Context lines after cursor (0-50)           |
 
 ## Cost Estimation
 
@@ -95,6 +88,7 @@ Based on Claude Sonnet 4 pricing:
 Typical usage: **~$0.10-0.50 per hour** of active coding
 
 Example:
+
 - 50 completions/hour
 - 500 input tokens average = 25,000 total input tokens
 - 100 output tokens average = 5,000 total output tokens
@@ -118,59 +112,27 @@ Example:
 ## Troubleshooting
 
 ### "API key not configured"
+
 - Run `Claude: Set API Key` command
 - Or add your key to VS Code settings
 
 ### "Rate limited by API"
+
 - Reduce `debounceDelay` setting to decrease request frequency
 - Wait a moment before continuing typing
 
 ### "Request timeout"
+
 - The API took too long (>5s)
 - Check your internet connection
 - Try again
 
 ### No completions appearing
+
 - Ensure language is supported (JS/TS/Dart)
 - Check you're not in a comment or string
 - Verify API key is valid
 - Check VS Code output channel: `Claude Autocomplete`
-
-## Development
-
-### Build from Source
-
-```bash
-# Install dependencies
-npm install
-
-# Compile TypeScript
-npm run compile
-
-# Watch for changes
-npm run watch
-```
-
-### Project Structure
-
-```
-src/
-├── extension.ts       # Main entry point
-├── completionProvider.ts # Inline completion logic
-├── claudeClient.ts    # API communication
-├── contextManager.ts  # Code context extraction
-├── cache.ts          # LRU cache implementation
-└── config.ts         # Configuration management
-```
-
-### Testing
-
-Test the extension manually:
-
-1. Press `F5` to open a test VS Code window
-2. Create a JavaScript/TypeScript/Dart file
-3. Add your API key via `Claude: Set API Key`
-4. Start typing to see completions
 
 ## Privacy & Security
 
@@ -192,9 +154,10 @@ MIT
 ## Support
 
 For issues or questions:
+
 1. Check the [troubleshooting section](#troubleshooting)
 2. View logs in VS Code output channel: `Claude Autocomplete`
-3. File an issue on GitHub (when repo is public)
+3. File an issue [here](https://forms.gle/JuBJbX2LbTvPar9b6)
 
 ---
 

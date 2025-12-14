@@ -63,6 +63,71 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  const selectModelCommand = vscode.commands.registerCommand('claudeAutocomplete.selectModel', async () => {
+    const models = [
+      {
+        label: 'Claude Opus 4.5 (Newest - $5/$25)',
+        value: 'claude-opus-4-5-20251101',
+        pricing: { input: '$5', output: '$25', cache5m: '$6.25', cache1h: '$10', cacheHit: '$0.50' }
+      },
+      {
+        label: 'Claude Sonnet 4.5 (Recommended - $3/$15)',
+        value: 'claude-sonnet-4-5-20250929',
+        pricing: { input: '$3', output: '$15', cache5m: '$3.75', cache1h: '$6', cacheHit: '$0.30' }
+      },
+      {
+        label: 'Claude Haiku 4.5 (Fast & Cheap - $1/$5)',
+        value: 'claude-haiku-4-5-20251001',
+        pricing: { input: '$1', output: '$5', cache5m: '$1.25', cache1h: '$2', cacheHit: '$0.10' }
+      },
+      {
+        label: 'Claude Opus 4.1 (Legacy - $15/$75)',
+        value: 'claude-opus-4-1-20250805',
+        pricing: { input: '$15', output: '$75', cache5m: '$18.75', cache1h: '$30', cacheHit: '$1.50' }
+      },
+      {
+        label: 'Claude Sonnet 4 (Legacy - $3/$15)',
+        value: 'claude-sonnet-4-20250514',
+        pricing: { input: '$3', output: '$15', cache5m: '$3.75', cache1h: '$6', cacheHit: '$0.30' }
+      },
+      {
+        label: 'Claude Sonnet 3.7 (Legacy - $3/$15)',
+        value: 'claude-3-7-sonnet-20250219',
+        pricing: { input: '$3', output: '$15', cache5m: '$3.75', cache1h: '$6', cacheHit: '$0.30' }
+      },
+      {
+        label: 'Claude Opus 4 (Legacy - $15/$75)',
+        value: 'claude-opus-4-20250514',
+        pricing: { input: '$15', output: '$75', cache5m: '$18.75', cache1h: '$30', cacheHit: '$1.50' }
+      },
+      {
+        label: 'Claude Haiku 3.5 (Legacy - $0.80/$4)',
+        value: 'claude-3-5-haiku-20241022',
+        pricing: { input: '$0.80', output: '$4', cache5m: '$1', cache1h: '$1.60', cacheHit: '$0.08' }
+      },
+      {
+        label: 'Claude Haiku 3 (Legacy - $0.25/$1.25)',
+        value: 'claude-3-haiku-20240307',
+        pricing: { input: '$0.25', output: '$1.25', cache5m: '$0.30', cache1h: '$0.50', cacheHit: '$0.03' }
+      },
+    ];
+
+    const selected = await vscode.window.showQuickPick(models, {
+      placeHolder: 'Select a Claude model',
+      matchOnDescription: true,
+    });
+
+    if (selected) {
+      try {
+        await ConfigManager.setModel(selected.value);
+        const message = `Claude Autocomplete: Using ${selected.label.split(' (')[0]}\n\nPricing per Million Tokens:\nInput: ${selected.pricing.input}\nOutput: ${selected.pricing.output}\n5m Cache Writes: ${selected.pricing.cache5m}\n1h Cache Writes: ${selected.pricing.cache1h}\nCache Hits: ${selected.pricing.cacheHit}`;
+        vscode.window.showInformationMessage(message);
+      } catch (error) {
+        vscode.window.showErrorMessage('Failed to change model');
+      }
+    }
+  });
+
   const toggleEnabledCommand = vscode.commands.registerCommand('claudeAutocomplete.toggleEnabled', async () => {
     try {
       await ConfigManager.toggleEnabled();
@@ -156,6 +221,7 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   context.subscriptions.push(setApiKeyCommand);
+  context.subscriptions.push(selectModelCommand);
   context.subscriptions.push(toggleEnabledCommand);
   context.subscriptions.push(clearCacheCommand);
   context.subscriptions.push(triggerCompletionCommand);
