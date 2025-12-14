@@ -113,6 +113,10 @@
       {
         "command": "claudeAutocomplete.triggerCompletion",
         "title": "Claude: Trigger Completion Manually"
+      },
+      {
+        "command": "claudeAutocomplete.acceptCompletion",
+        "title": "Claude: Accept Completion (Tab)"
       }
     ],
     "keybindings": [
@@ -121,6 +125,11 @@
         "key": "ctrl+shift+space",
         "mac": "cmd+shift+space",
         "when": "editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
+      },
+      {
+        "command": "editor.action.inlineSuggest.commit",
+        "key": "tab",
+        "when": "inlineSuggestionsVisible && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
       }
     ]
   },

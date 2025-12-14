@@ -11,6 +11,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Initialize completion provider
   completionProvider = new ClaudeCompletionProvider();
 
+  // Create status bar item
+  const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  statusBar.text = '$(check) Claude: Ready';
+  statusBar.tooltip = 'Claude Autocomplete ready. Press Ctrl+Shift+Space for completion';
+  statusBar.show();
+  context.subscriptions.push(statusBar);
+
+  // Attach status bar to completion provider
+  completionProvider.setStatusBar(statusBar);
+
   // Get initial configuration
   const config = ConfigManager.getConfig();
   if (config.apiKey) {
@@ -149,6 +159,17 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(toggleEnabledCommand);
   context.subscriptions.push(clearCacheCommand);
   context.subscriptions.push(triggerCompletionCommand);
+
+  // Add keyboard event handler for Tab to accept inline completion
+  const tabHandler = vscode.commands.registerCommand('claudeAutocomplete.acceptCompletion', async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+      // Try to accept the inline completion by triggering Tab key
+      // This lets VS Code's default Tab behavior work for inline completions
+      await vscode.commands.executeCommand('editor.action.inlineSuggest.commit');
+    }
+  });
+  context.subscriptions.push(tabHandler);
 
   // Listen for configuration changes
   configChangeDisposable = ConfigManager.onConfigChange(() => {

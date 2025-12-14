@@ -11,9 +11,35 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
   private pendingRequests: Map<string, Promise<string>> = new Map();
   private lastRequestTime = 0;
   private notificationShown = false;
+  private statusBar: vscode.StatusBarItem | null = null;
+  private isFetching = false;
 
   constructor() {
     this.cache = new LRUCache(100, 300);
+  }
+
+  /**
+   * Set status bar item for visual feedback
+   */
+  setStatusBar(statusBar: vscode.StatusBarItem): void {
+    this.statusBar = statusBar;
+  }
+
+  /**
+   * Update status bar to show fetching state
+   */
+  private updateStatusBar(): void {
+    if (!this.statusBar) return;
+
+    if (this.isFetching) {
+      this.statusBar.text = '$(loading~spin) Claude: Generating...';
+      this.statusBar.tooltip = 'Generating code completion...';
+      this.statusBar.show();
+    } else {
+      this.statusBar.text = '$(check) Claude: Ready';
+      this.statusBar.tooltip = 'Claude Autocomplete ready. Press Ctrl+Shift+Space for completion';
+      this.statusBar.show();
+    }
   }
 
   /**
@@ -96,11 +122,17 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
     // For manual triggers, execute immediately without debounce
     if (isManualTrigger) {
       try {
+        this.isFetching = true;
+        this.updateStatusBar();
+
         const requestPromise = this.requestCompletion(ctx, config, token) as Promise<string>;
         this.pendingRequests.set(cacheKey, requestPromise);
 
         const completion = await requestPromise;
         this.pendingRequests.delete(cacheKey);
+
+        this.isFetching = false;
+        this.updateStatusBar();
 
         if (completion) {
           this.cache.set(cacheKey, completion);
@@ -111,6 +143,8 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
         }
       } catch (error) {
         this.pendingRequests.delete(cacheKey);
+        this.isFetching = false;
+        this.updateStatusBar();
         if (error instanceof Error) {
           this.claudeClient?.log(`Manual trigger error: ${error.message}`, 'error');
         }
@@ -140,12 +174,18 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
         }
 
         try {
+          this.isFetching = true;
+          this.updateStatusBar();
+
           // Create request promise
           const requestPromise = this.requestCompletion(ctx, config, token) as Promise<string>;
           this.pendingRequests.set(cacheKey, requestPromise);
 
           const completion = await requestPromise;
           this.pendingRequests.delete(cacheKey);
+
+          this.isFetching = false;
+          this.updateStatusBar();
 
           if (completion) {
             this.cache.set(cacheKey, completion);
@@ -156,6 +196,8 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
           }
         } catch (error) {
           this.pendingRequests.delete(cacheKey);
+          this.isFetching = false;
+          this.updateStatusBar();
           if (token.isCancellationRequested) {
             resolve(undefined);
           } else {
