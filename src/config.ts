@@ -20,7 +20,7 @@ export class ConfigManager {
     return {
       apiKey: config.get<string>('apiKey') || '',
       enabled: config.get<boolean>('enabled') ?? true,
-      model: config.get<string>('model') || 'claude-sonnet-4-20250514',
+      model: config.get<string>('model') || 'claude-3-5-haiku-20241022',
       maxTokens: config.get<number>('maxTokens') || 300,
       temperature: config.get<number>('temperature') ?? 0.2,
       debounceDelay: config.get<number>('debounceDelay') || 300,
@@ -32,6 +32,11 @@ export class ConfigManager {
   static async setApiKey(apiKey: string): Promise<void> {
     const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
     await config.update('apiKey', apiKey, vscode.ConfigurationTarget.Global);
+  }
+
+  static async setModel(model: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
+    await config.update('model', model, vscode.ConfigurationTarget.Global);
   }
 
   static async toggleEnabled(): Promise<void> {

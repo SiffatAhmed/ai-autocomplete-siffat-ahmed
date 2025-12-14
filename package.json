@@ -57,7 +57,7 @@
         },
         "claudeAutocomplete.model": {
           "type": "string",
-          "default": "claude-sonnet-4-20250514",
+          "default": "claude-3-5-haiku-20241022",
           "description": "Claude model to use"
         },
         "claudeAutocomplete.maxTokens": {
@@ -101,6 +101,10 @@
       {
         "command": "claudeAutocomplete.setApiKey",
         "title": "Claude: Set API Key"
+      },
+      {
+        "command": "claudeAutocomplete.selectModel",
+        "title": "Claude: Select Model"
       },
       {
         "command": "claudeAutocomplete.toggleEnabled",
