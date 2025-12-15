@@ -122,6 +122,10 @@
       {
         "command": "claudeAutocomplete.acceptCompletion",
         "title": "Claude: Accept Completion (Tab)"
+      },
+      {
+        "command": "claudeAutocomplete.rejectCompletion",
+        "title": "Claude: Reject Completion (Escape)"
       }
     ],
     "keybindings": [
@@ -132,9 +136,14 @@
         "when": "editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
       },
       {
-        "command": "editor.action.inlineSuggest.commit",
+        "command": "claudeAutocomplete.acceptCompletion",
         "key": "tab",
-        "when": "inlineSuggestionsVisible && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
+        "when": "(claudeSuggestionVisible || inlineSuggestionsVisible) && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
+      },
+      {
+        "command": "claudeAutocomplete.rejectCompletion",
+        "key": "escape",
+        "when": "claudeSuggestionVisible && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
       }
     ]
   },

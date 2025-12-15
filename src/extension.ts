@@ -1,15 +1,21 @@
 import * as vscode from 'vscode';
 import { ClaudeCompletionProvider } from './completionProvider';
 import { ConfigManager } from './config';
+import { SuggestionManager } from './suggestionManager';
 
 let completionProvider: ClaudeCompletionProvider | null = null;
 let configChangeDisposable: vscode.Disposable | null = null;
+let suggestionManager: SuggestionManager | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Claude Autocomplete extension activated');
 
   // Initialize completion provider
   completionProvider = new ClaudeCompletionProvider();
+
+  // Initialize suggestion manager
+  suggestionManager = new SuggestionManager();
+  context.subscriptions.push(suggestionManager);
 
   // Create status bar item
   const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -200,13 +206,13 @@ export function activate(context: vscode.ExtensionContext) {
             );
 
             if (items && items.length > 0) {
-              // Insert first completion
+              // Show first completion as suggestion
               const item = items[0];
               const insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText?.value || '';
-              const edit = new vscode.WorkspaceEdit();
-              edit.insert(document.uri, position, insertText);
-              await vscode.workspace.applyEdit(edit);
-              vscode.window.showInformationMessage('Claude: Completion inserted');
+
+              if (suggestionManager) {
+                suggestionManager.showSuggestion(editor, insertText, position);
+              }
             } else {
               vscode.window.showWarningMessage('Claude: No completions available. Check API key and try again.');
               // Show output channel for debugging
@@ -227,15 +233,23 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(triggerCompletionCommand);
 
   // Add keyboard event handler for Tab to accept inline completion
-  const tabHandler = vscode.commands.registerCommand('claudeAutocomplete.acceptCompletion', async () => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      // Try to accept the inline completion by triggering Tab key
-      // This lets VS Code's default Tab behavior work for inline completions
-      await vscode.commands.executeCommand('editor.action.inlineSuggest.commit');
+  const acceptCompletionCommand = vscode.commands.registerCommand('claudeAutocomplete.acceptCompletion', async () => {
+    // First try to accept our custom suggestion
+    if (suggestionManager && suggestionManager.acceptSuggestion()) {
+      return;
+    }
+    // If no custom suggestion, try to accept native inline suggestions
+    await vscode.commands.executeCommand('editor.action.inlineSuggest.commit');
+  });
+  context.subscriptions.push(acceptCompletionCommand);
+
+  // Add keyboard event handler for Escape to reject suggestion
+  const rejectCompletionCommand = vscode.commands.registerCommand('claudeAutocomplete.rejectCompletion', async () => {
+    if (suggestionManager) {
+      suggestionManager.rejectSuggestion();
     }
   });
-  context.subscriptions.push(tabHandler);
+  context.subscriptions.push(rejectCompletionCommand);
 
   // Listen for configuration changes
   configChangeDisposable = ConfigManager.onConfigChange(() => {
@@ -256,6 +270,11 @@ export function deactivate() {
   if (completionProvider) {
     completionProvider.dispose();
     completionProvider = null;
+  }
+
+  if (suggestionManager) {
+    suggestionManager.dispose();
+    suggestionManager = null;
   }
 
   if (configChangeDisposable) {
