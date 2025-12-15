@@ -19,8 +19,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Create status bar item
   const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBar.text = '$(check) Claude: Ready';
-  statusBar.tooltip = 'Claude Autocomplete ready. Press Ctrl+Shift+Space for completion';
+  statusBar.text = '$(check) AI Autocomplete: Ready';
+  statusBar.tooltip = 'AI Autocomplete ready. Press Ctrl+Shift+Space for completion';
   statusBar.show();
   context.subscriptions.push(statusBar);
 
@@ -48,6 +48,15 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(completionDisposable);
+
+  // Add listener for text document changes to trigger automatic completions
+  const onDidChangeTextDocumentDisposable = vscode.workspace.onDidChangeTextDocument(event => {
+    if (completionProvider) {
+      completionProvider.handleDidChangeTextDocument(event);
+    }
+  });
+
+  context.subscriptions.push(onDidChangeTextDocumentDisposable);
 
   // Register commands
   const setApiKeyCommand = vscode.commands.registerCommand('claudeAutocomplete.setApiKey', async () => {
@@ -195,7 +204,7 @@ export function activate(context: vscode.ExtensionContext) {
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Window,
-            title: 'Claude: Generating completion...',
+            title: 'AI Autocomplete: Generating completion...',
           },
           async () => {
             const items = await completionProvider!.provideInlineCompletionItems(
@@ -214,14 +223,14 @@ export function activate(context: vscode.ExtensionContext) {
                 suggestionManager.showSuggestion(editor, insertText, position);
               }
             } else {
-              vscode.window.showWarningMessage('Claude: No completions available. Check API key and try again.');
+              vscode.window.showWarningMessage('AI Autocomplete: No completions available. Check API key and try again.');
               // Show output channel for debugging
               completionProvider?.['claudeClient']?.showOutput?.();
             }
           }
         );
       } catch (error) {
-        vscode.window.showErrorMessage(`Claude: Completion error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        vscode.window.showErrorMessage(`AI Autocomplete: Completion error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   });
