@@ -3,7 +3,7 @@
   "displayName": "AI Autocomplete (Claude)",
   "description": "AI-powered code completions using Claude API for JavaScript, TypeScript, and Dart",
   "icon": "my-extension-icon.png",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "publisher": "siffat-ahmed",
   "license": "MIT",
   "engines": {
@@ -25,7 +25,7 @@
   "main": "./out/extension.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/anthropics/claude-autocomplete"
+    "url": "https://github.com/SiffatAhmed/ai-autocomplete-siffat-ahmed"
   },
   "activationEvents": [
     "onLanguage:javascript",
@@ -122,6 +122,10 @@
       {
         "command": "claudeAutocomplete.acceptCompletion",
         "title": "Claude: Accept Completion (Tab)"
+      },
+      {
+        "command": "claudeAutocomplete.rejectCompletion",
+        "title": "Claude: Reject Completion (Escape)"
       }
     ],
     "keybindings": [
@@ -132,9 +136,14 @@
         "when": "editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
       },
       {
-        "command": "editor.action.inlineSuggest.commit",
+        "command": "claudeAutocomplete.acceptCompletion",
         "key": "tab",
-        "when": "inlineSuggestionsVisible && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
+        "when": "(claudeSuggestionVisible || inlineSuggestionsVisible) && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
+      },
+      {
+        "command": "claudeAutocomplete.rejectCompletion",
+        "key": "escape",
+        "when": "claudeSuggestionVisible && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
       }
     ]
   },

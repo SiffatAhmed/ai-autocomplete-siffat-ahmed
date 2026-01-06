@@ -32,12 +32,12 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
     if (!this.statusBar) return;
 
     if (this.isFetching) {
-      this.statusBar.text = '$(loading~spin) Claude: Generating...';
+      this.statusBar.text = '$(loading~spin) AI Autocomplete: Generating...';
       this.statusBar.tooltip = 'Generating code completion...';
       this.statusBar.show();
     } else {
-      this.statusBar.text = '$(check) Claude: Ready';
-      this.statusBar.tooltip = 'Claude Autocomplete ready. Press Ctrl+Shift+Space for completion';
+      this.statusBar.text = '$(check) AI Autocomplete: Ready';
+      this.statusBar.tooltip = 'AI Autocomplete ready. Press Ctrl+Shift+Space for completion';
       this.statusBar.show();
     }
   }
@@ -303,5 +303,38 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
    */
   resetNotificationFlag(): void {
     this.notificationShown = false;
+  }
+
+  /**
+   * Handle text document changes to trigger completions automatically
+   */
+  public handleDidChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
+    const config = ConfigManager.getConfig();
+    if (!config.enabled) {
+      return;
+    }
+
+    const editor = vscode.window.activeTextEditor;
+    if (editor && editor.document === event.document) {
+      const position = editor.selection.active;
+
+      // Use ContextManager to decide if we should trigger
+      if (ContextManager.shouldTriggerCompletion(editor.document, position, editor.document.languageId)) {
+        const debounceKey = editor.document.uri.toString();
+        
+        // Clear previous timer
+        if (this.debounceTimers.has(debounceKey)) {
+          clearTimeout(this.debounceTimers.get(debounceKey)!);
+        }
+
+        // Set new timer
+        const timer = setTimeout(() => {
+          vscode.commands.executeCommand('editor.action.inlineSuggest.trigger');
+          this.debounceTimers.delete(debounceKey);
+        }, config.debounceDelay);
+
+        this.debounceTimers.set(debounceKey, timer);
+      }
+    }
   }
 }
