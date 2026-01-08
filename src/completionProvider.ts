@@ -226,7 +226,7 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
   }
 
   /**
-   * Request completion from Claude API
+   * Request completion from AI API
    */
   private async requestCompletion(
     context: CodeContext,
@@ -327,16 +327,32 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
 
       // Use ContextManager to decide if we should trigger
       if (ContextManager.shouldTriggerCompletion(editor.document, position, editor.document.languageId)) {
-        const debounceKey = editor.document.uri.toString();
+        // Include position in debounce key to handle multiple edits at different positions
+        const debounceKey = `${editor.document.uri.toString()}:${position.line}:${position.character}`;
 
-        // Clear previous timer
+        // Clear previous timer for this position
         if (this.debounceTimers.has(debounceKey)) {
           clearTimeout(this.debounceTimers.get(debounceKey)!);
         }
 
-        // Set new timer
+        // Set new timer to trigger completion
         const timer = setTimeout(() => {
-          vscode.commands.executeCommand('editor.action.inlineSuggest.trigger');
+          if (vscode.window.activeTextEditor) {
+            // Call provideInlineCompletionItems directly to get completions
+            const context: vscode.InlineCompletionContext = {
+              triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+              selectedCompletionInfo: undefined,
+            };
+
+            this.provideInlineCompletionItems(
+              editor.document,
+              position,
+              context,
+              new vscode.CancellationTokenSource().token
+            ).catch((error) => {
+              console.error('Error in automatic completion:', error);
+            });
+          }
           this.debounceTimers.delete(debounceKey);
         }, config.debounceDelay);
 
