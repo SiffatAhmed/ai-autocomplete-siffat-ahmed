@@ -1,17 +1,20 @@
 import * as vscode from 'vscode';
-import { ClaudeCompletionProvider } from './completionProvider';
+import { AICompletionProvider } from './completionProvider';
 import { ConfigManager } from './config';
 import { SuggestionManager } from './suggestionManager';
 
-let completionProvider: ClaudeCompletionProvider | null = null;
+let completionProvider: AICompletionProvider | null = null;
 let configChangeDisposable: vscode.Disposable | null = null;
 let suggestionManager: SuggestionManager | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Claude Autocomplete extension activated');
+  console.log('AI Autocomplete extension activated');
+
+  // Initialize secret storage for API key
+  ConfigManager.setSecretStorage(context.secrets);
 
   // Initialize completion provider
-  completionProvider = new ClaudeCompletionProvider();
+  completionProvider = new AICompletionProvider();
 
   // Initialize suggestion manager
   suggestionManager = new SuggestionManager();
@@ -28,10 +31,11 @@ export function activate(context: vscode.ExtensionContext) {
   completionProvider.setStatusBar(statusBar);
 
   // Get initial configuration
-  const config = ConfigManager.getConfig();
-  if (config.apiKey) {
-    completionProvider.init(config.apiKey);
-  }
+  ConfigManager.getConfig().then((config) => {
+    if (config.apiKey) {
+      completionProvider?.init(config.apiKey);
+    }
+  });
 
   // Register inline completion provider for supported languages
   const supportedLanguages = [
@@ -59,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(onDidChangeTextDocumentDisposable);
 
   // Register commands
-  const setApiKeyCommand = vscode.commands.registerCommand('claudeAutocomplete.setApiKey', async () => {
+  const setApiKeyCommand = vscode.commands.registerCommand('aiAutocomplete.setApiKey', async () => {
     const apiKey = await vscode.window.showInputBox({
       prompt: 'Enter your Anthropic API key',
       password: true,
@@ -71,14 +75,14 @@ export function activate(context: vscode.ExtensionContext) {
         await ConfigManager.setApiKey(apiKey);
         completionProvider?.init(apiKey);
         completionProvider?.resetNotificationFlag();
-        vscode.window.showInformationMessage('Claude Autocomplete: API key configured successfully');
+        vscode.window.showInformationMessage('AI Autocomplete: API key configured successfully');
       } catch (error) {
         vscode.window.showErrorMessage('Failed to save API key');
       }
     }
   });
 
-  const selectModelCommand = vscode.commands.registerCommand('claudeAutocomplete.selectModel', async () => {
+  const selectModelCommand = vscode.commands.registerCommand('aiAutocomplete.selectModel', async () => {
     const models = [
       {
         label: 'Claude Opus 4.5 (Newest - $5/$25)',
@@ -128,14 +132,14 @@ export function activate(context: vscode.ExtensionContext) {
     ];
 
     const selected = await vscode.window.showQuickPick(models, {
-      placeHolder: 'Select a Claude model',
+      placeHolder: 'Select a AI model',
       matchOnDescription: true,
     });
 
     if (selected) {
       try {
         await ConfigManager.setModel(selected.value);
-        const message = `Claude Autocomplete: Using ${selected.label.split(' (')[0]}\n\nPricing per Million Tokens:\nInput: ${selected.pricing.input}\nOutput: ${selected.pricing.output}\n5m Cache Writes: ${selected.pricing.cache5m}\n1h Cache Writes: ${selected.pricing.cache1h}\nCache Hits: ${selected.pricing.cacheHit}`;
+        const message = `AI Autocomplete: Using ${selected.label.split(' (')[0]}\n\nPricing per Million Tokens:\nInput: ${selected.pricing.input}\nOutput: ${selected.pricing.output}\n5m Cache Writes: ${selected.pricing.cache5m}\n1h Cache Writes: ${selected.pricing.cache1h}\nCache Hits: ${selected.pricing.cacheHit}`;
         vscode.window.showInformationMessage(message);
       } catch (error) {
         vscode.window.showErrorMessage('Failed to change model');
@@ -143,28 +147,28 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  const toggleEnabledCommand = vscode.commands.registerCommand('claudeAutocomplete.toggleEnabled', async () => {
+  const toggleEnabledCommand = vscode.commands.registerCommand('aiAutocomplete.toggleEnabled', async () => {
     try {
       await ConfigManager.toggleEnabled();
-      const config = ConfigManager.getConfig();
+      const config = await ConfigManager.getConfig();
       const status = config.enabled ? 'enabled' : 'disabled';
-      vscode.window.showInformationMessage(`Claude Autocomplete: ${status}`);
+      vscode.window.showInformationMessage(`AI Autocomplete: ${status}`);
     } catch (error) {
-      vscode.window.showErrorMessage('Failed to toggle Claude Autocomplete');
+      vscode.window.showErrorMessage('Failed to toggle AI Autocomplete');
     }
   });
 
-  const clearCacheCommand = vscode.commands.registerCommand('claudeAutocomplete.clearCache', () => {
+  const clearCacheCommand = vscode.commands.registerCommand('aiAutocomplete.clearCache', () => {
     if (completionProvider) {
       // Cache is cleared through provider disposal and recreation
-      vscode.window.showInformationMessage('Claude Autocomplete: Cache cleared');
+      vscode.window.showInformationMessage('AI Autocomplete: Cache cleared');
     }
   });
 
-  const triggerCompletionCommand = vscode.commands.registerCommand('claudeAutocomplete.triggerCompletion', async () => {
+  const triggerCompletionCommand = vscode.commands.registerCommand('aiAutocomplete.triggerCompletion', async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
-      vscode.window.showWarningMessage('Claude Autocomplete: No active editor');
+      vscode.window.showWarningMessage('AI Autocomplete: No active editor');
       return;
     }
 
@@ -174,19 +178,19 @@ export function activate(context: vscode.ExtensionContext) {
     // Check if language is supported
     const supportedLanguages = ['javascript', 'typescript', 'javascriptreact', 'typescriptreact', 'dart'];
     if (!supportedLanguages.includes(document.languageId)) {
-      vscode.window.showWarningMessage(`Claude Autocomplete: Language "${document.languageId}" not supported. Supported: JavaScript, TypeScript, Dart`);
+      vscode.window.showWarningMessage(`AI Autocomplete: Language "${document.languageId}" not supported. Supported: JavaScript, TypeScript, Dart`);
       return;
     }
 
     // Check if API key is configured
-    const config = ConfigManager.getConfig();
+    const config = await ConfigManager.getConfig();
     if (!config.apiKey) {
       const result = await vscode.window.showWarningMessage(
-        'Claude Autocomplete: API key not configured',
+        'AI Autocomplete: API key not configured',
         'Set API Key'
       );
       if (result === 'Set API Key') {
-        await vscode.commands.executeCommand('claudeAutocomplete.setApiKey');
+        await vscode.commands.executeCommand('aiAutocomplete.setApiKey');
       }
       return;
     }
@@ -225,7 +229,7 @@ export function activate(context: vscode.ExtensionContext) {
             } else {
               vscode.window.showWarningMessage('AI Autocomplete: No completions available. Check API key and try again.');
               // Show output channel for debugging
-              completionProvider?.['claudeClient']?.showOutput?.();
+              completionProvider?.['aiClient']?.showOutput?.();
             }
           }
         );
@@ -242,7 +246,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(triggerCompletionCommand);
 
   // Add keyboard event handler for Tab to accept inline completion
-  const acceptCompletionCommand = vscode.commands.registerCommand('claudeAutocomplete.acceptCompletion', async () => {
+  const acceptCompletionCommand = vscode.commands.registerCommand('aiAutocomplete.acceptCompletion', async () => {
     // First try to accept our custom suggestion
     if (suggestionManager && suggestionManager.acceptSuggestion()) {
       return;
@@ -253,7 +257,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(acceptCompletionCommand);
 
   // Add keyboard event handler for Escape to reject suggestion
-  const rejectCompletionCommand = vscode.commands.registerCommand('claudeAutocomplete.rejectCompletion', async () => {
+  const rejectCompletionCommand = vscode.commands.registerCommand('aiAutocomplete.rejectCompletion', async () => {
     if (suggestionManager) {
       suggestionManager.rejectSuggestion();
     }
@@ -261,21 +265,20 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(rejectCompletionCommand);
 
   // Listen for configuration changes
-  configChangeDisposable = ConfigManager.onConfigChange(() => {
-    const config = ConfigManager.getConfig();
-    if (config.apiKey && !completionProvider?.['claudeClient']) {
+  configChangeDisposable = ConfigManager.onConfigChange(async () => {
+    const config = await ConfigManager.getConfig();
+    if (config.apiKey && !completionProvider?.['aiClient']) {
       completionProvider?.init(config.apiKey);
     }
   });
 
   context.subscriptions.push(configChangeDisposable);
 
-  console.log('Claude Autocomplete extension fully initialized');
+  console.log('AI Autocomplete extension fully initialized');
 }
 
 export function deactivate() {
-  console.log('Claude Autocomplete extension deactivated');
-
+  console.log('AI Autocomplete extension deactivated');
   if (completionProvider) {
     completionProvider.dispose();
     completionProvider = null;
