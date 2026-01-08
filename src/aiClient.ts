@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-export interface ClaudeRequestOptions {
+export interface AIRequestOptions {
   model: string;
   maxTokens: number;
   temperature: number;
@@ -9,7 +9,7 @@ export interface ClaudeRequestOptions {
   timeoutMs?: number;
 }
 
-export interface ClaudeResponse {
+export interface AIResponse {
   content: string;
   usage?: {
     inputTokens: number;
@@ -17,7 +17,7 @@ export interface ClaudeResponse {
   };
 }
 
-export class ClaudeClient {
+export class AIClient {
   private apiKey: string;
   private baseUrl = 'https://api.anthropic.com/v1';
   private retryCount = 0;
@@ -27,16 +27,16 @@ export class ClaudeClient {
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
-    this.outputChannel = vscode.window.createOutputChannel('Claude Autocomplete');
+    this.outputChannel = vscode.window.createOutputChannel('AI Autocomplete');
   }
 
   /**
-   * Request completion from Claude API
+   * Request completion from AI API
    */
   async requestCompletion(
-    options: ClaudeRequestOptions,
+    options: AIRequestOptions,
     cancellationToken?: vscode.CancellationToken
-  ): Promise<ClaudeResponse> {
+  ): Promise<AIResponse> {
     if (!this.apiKey) {
       throw new Error('API key not configured');
     }

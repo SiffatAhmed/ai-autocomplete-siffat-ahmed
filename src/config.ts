@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-export interface ClaudeConfig {
+export interface AIConfig {
   apiKey: string;
   enabled: boolean;
   model: string;
@@ -12,13 +12,24 @@ export interface ClaudeConfig {
 }
 
 export class ConfigManager {
-  private static readonly CONFIG_NAMESPACE = 'claudeAutocomplete';
+  private static readonly CONFIG_NAMESPACE = 'aiAutocomplete';
+  private static readonly API_KEY_SECRET = 'aiAutocomplete.apiKey';
+  private static secretStorage: vscode.SecretStorage | null = null;
 
-  static getConfig(): ClaudeConfig {
+  static setSecretStorage(secretStorage: vscode.SecretStorage): void {
+    this.secretStorage = secretStorage;
+  }
+
+  static async getConfig(): Promise<AIConfig> {
     const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
+    let apiKey = '';
+
+    if (this.secretStorage) {
+      apiKey = (await this.secretStorage.get(this.API_KEY_SECRET)) || '';
+    }
 
     return {
-      apiKey: config.get<string>('apiKey') || '',
+      apiKey,
       enabled: config.get<boolean>('enabled') ?? true,
       model: config.get<string>('model') || 'claude-3-5-haiku-20241022',
       maxTokens: config.get<number>('maxTokens') || 300,
@@ -30,8 +41,10 @@ export class ConfigManager {
   }
 
   static async setApiKey(apiKey: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
-    await config.update('apiKey', apiKey, vscode.ConfigurationTarget.Global);
+    if (!this.secretStorage) {
+      throw new Error('Secret storage not initialized');
+    }
+    await this.secretStorage.store(this.API_KEY_SECRET, apiKey);
   }
 
   static async setModel(model: string): Promise<void> {
@@ -45,8 +58,8 @@ export class ConfigManager {
     await config.update('enabled', !currentState, vscode.ConfigurationTarget.Global);
   }
 
-  static isConfigured(): boolean {
-    const config = this.getConfig();
+  static async isConfigured(): Promise<boolean> {
+    const config = await this.getConfig();
     return config.apiKey.length > 0;
   }
 

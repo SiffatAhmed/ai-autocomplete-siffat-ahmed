@@ -36,7 +36,7 @@ export class SuggestionManager {
     };
 
     // Update context key for keybindings
-    vscode.commands.executeCommand('setContext', 'claudeSuggestionVisible', true);
+    vscode.commands.executeCommand('setContext', 'aiSuggestionVisible', true);
 
     // Apply decoration
     this.renderDecoration();
@@ -98,7 +98,7 @@ export class SuggestionManager {
     }
 
     // Update context key
-    vscode.commands.executeCommand('setContext', 'claudeSuggestionVisible', false);
+    vscode.commands.executeCommand('setContext', 'aiSuggestionVisible', false);
 
     // Clean up listeners
     if (this.changeListener) {

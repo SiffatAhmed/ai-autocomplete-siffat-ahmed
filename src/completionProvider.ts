@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { ClaudeClient } from './claudeClient';
+import { AIClient } from './aiClient';
 import { LRUCache } from './cache';
 import { ContextManager, CodeContext } from './contextManager';
-import { ConfigManager, ClaudeConfig } from './config';
+import { ConfigManager, AIConfig } from './config';
 
-export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProvider {
-  private claudeClient: ClaudeClient | null = null;
+export class AICompletionProvider implements vscode.InlineCompletionItemProvider {
+  private aiClient: AIClient | null = null;
   private cache: LRUCache;
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
   private pendingRequests: Map<string, Promise<string>> = new Map();
@@ -46,7 +46,7 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
    * Initialize the provider with API key
    */
   init(apiKey: string): void {
-    this.claudeClient = new ClaudeClient(apiKey);
+    this.aiClient = new AIClient(apiKey);
   }
 
   /**
@@ -58,7 +58,7 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
     context: vscode.InlineCompletionContext,
     token: vscode.CancellationToken
   ): Promise<vscode.InlineCompletionItem[] | undefined> {
-    const config = ConfigManager.getConfig();
+    const config = await ConfigManager.getConfig();
     const isManualTrigger = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
 
     // Check if feature is enabled
@@ -67,14 +67,14 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
     }
 
     // Check if API is configured
-    if (!this.claudeClient || !config.apiKey) {
+    if (!this.aiClient || !config.apiKey) {
       if (!this.notificationShown) {
         vscode.window.showWarningMessage(
-          'Claude Autocomplete: API key not configured',
+          'AI Autocomplete: API key not configured',
           'Set API Key'
         ).then((selection) => {
           if (selection === 'Set API Key') {
-            vscode.commands.executeCommand('claudeAutocomplete.setApiKey');
+            vscode.commands.executeCommand('aiAutocomplete.setApiKey');
           }
         });
         this.notificationShown = true;
@@ -146,7 +146,7 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
         this.isFetching = false;
         this.updateStatusBar();
         if (error instanceof Error) {
-          this.claudeClient?.log(`Manual trigger error: ${error.message}`, 'error');
+          this.aiClient?.log(`Manual trigger error: ${error.message}`, 'error');
         }
         return undefined;
       }
@@ -202,7 +202,7 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
             resolve(undefined);
           } else {
             if (error instanceof Error) {
-              this.claudeClient?.log(`Completion error: ${error.message}`, 'error');
+              this.aiClient?.log(`Completion error: ${error.message}`, 'error');
             }
             resolve(undefined);
           }
@@ -230,10 +230,10 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
    */
   private async requestCompletion(
     context: CodeContext,
-    config: ClaudeConfig,
+    config: AIConfig,
     token: vscode.CancellationToken
   ): Promise<string | null> {
-    if (!this.claudeClient) {
+    if (!this.aiClient) {
       return null;
     }
 
@@ -241,7 +241,7 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
       const systemPrompt = ContextManager.getSystemPrompt(context.languageId);
       const userPrompt = ContextManager.buildUserPrompt(context);
 
-      const response = await this.claudeClient.requestCompletion(
+      const response = await this.aiClient.requestCompletion(
         {
           model: config.model,
           maxTokens: config.maxTokens,
@@ -264,7 +264,7 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
       return completion || null;
     } catch (error) {
       if (error instanceof Error) {
-        this.claudeClient.log(`Completion error: ${error.message}`, 'error');
+        this.aiClient.log(`Completion error: ${error.message}`, 'error');
       }
       return null;
     }
@@ -293,8 +293,8 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
     this.debounceTimers.clear();
     this.pendingRequests.clear();
     this.cache.clear();
-    if (this.claudeClient) {
-      this.claudeClient.dispose();
+    if (this.aiClient) {
+      this.aiClient.dispose();
     }
   }
 
@@ -309,7 +309,14 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
    * Handle text document changes to trigger completions automatically
    */
   public handleDidChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
-    const config = ConfigManager.getConfig();
+    // Run async operation without blocking
+    this.handleDidChangeTextDocumentAsync(event).catch((error) => {
+      console.error('Error in handleDidChangeTextDocument:', error);
+    });
+  }
+
+  private async handleDidChangeTextDocumentAsync(event: vscode.TextDocumentChangeEvent): Promise<void> {
+    const config = await ConfigManager.getConfig();
     if (!config.enabled) {
       return;
     }
@@ -321,7 +328,7 @@ export class ClaudeCompletionProvider implements vscode.InlineCompletionItemProv
       // Use ContextManager to decide if we should trigger
       if (ContextManager.shouldTriggerCompletion(editor.document, position, editor.document.languageId)) {
         const debounceKey = editor.document.uri.toString();
-        
+
         // Clear previous timer
         if (this.debounceTimers.has(debounceKey)) {
           clearTimeout(this.debounceTimers.get(debounceKey)!);

@@ -1,7 +1,7 @@
 {
   "name": "ai-autocomplete-siffat-ahmed",
-  "displayName": "AI Autocomplete (Claude)",
-  "description": "AI-powered code completions using Claude API for JavaScript, TypeScript, and Dart",
+  "displayName": "AI Autocomplete",
+  "description": "AI-powered code completions for JavaScript, TypeScript, and Dart",
   "icon": "my-extension-icon.png",
   "version": "0.1.2",
   "publisher": "siffat-ahmed",
@@ -43,53 +43,47 @@
   },
   "contributes": {
     "configuration": {
-      "title": "Claude Autocomplete",
+      "title": "AI Autocomplete",
       "properties": {
-        "claudeAutocomplete.apiKey": {
-          "type": "string",
-          "default": "",
-          "description": "Anthropic API key",
-          "markdownDescription": "Your Anthropic API key. Get one at https://console.anthropic.com"
-        },
-        "claudeAutocomplete.enabled": {
+        "aiAutocomplete.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable/disable Claude autocomplete for JS/TS/Dart"
+          "description": "Enable/disable AI autocomplete for JS/TS/Dart"
         },
-        "claudeAutocomplete.model": {
+        "aiAutocomplete.model": {
           "type": "string",
           "default": "claude-3-5-haiku-20241022",
           "description": "Claude model to use"
         },
-        "claudeAutocomplete.maxTokens": {
+        "aiAutocomplete.maxTokens": {
           "type": "number",
           "default": 300,
           "minimum": 100,
           "maximum": 1000,
           "description": "Maximum tokens for completion"
         },
-        "claudeAutocomplete.temperature": {
+        "aiAutocomplete.temperature": {
           "type": "number",
           "default": 0.2,
           "minimum": 0,
           "maximum": 1,
           "description": "Temperature for completions (0=deterministic, 1=creative)"
         },
-        "claudeAutocomplete.debounceDelay": {
+        "aiAutocomplete.debounceDelay": {
           "type": "number",
           "default": 300,
           "minimum": 100,
           "maximum": 2000,
           "description": "Delay in ms before requesting completion"
         },
-        "claudeAutocomplete.contextLinesBefore": {
+        "aiAutocomplete.contextLinesBefore": {
           "type": "number",
           "default": 30,
           "minimum": 10,
           "maximum": 100,
           "description": "Number of lines before cursor to include as context"
         },
-        "claudeAutocomplete.contextLinesAfter": {
+        "aiAutocomplete.contextLinesAfter": {
           "type": "number",
           "default": 10,
           "minimum": 0,
@@ -100,50 +94,50 @@
     },
     "commands": [
       {
-        "command": "claudeAutocomplete.setApiKey",
-        "title": "Claude: Set API Key"
+        "command": "aiAutocomplete.setApiKey",
+        "title": "AI: Set API Key"
       },
       {
-        "command": "claudeAutocomplete.selectModel",
-        "title": "Claude: Select Model"
+        "command": "aiAutocomplete.selectModel",
+        "title": "AI: Select Model"
       },
       {
-        "command": "claudeAutocomplete.toggleEnabled",
-        "title": "Claude: Toggle Autocomplete"
+        "command": "aiAutocomplete.toggleEnabled",
+        "title": "AI: Toggle Autocomplete"
       },
       {
-        "command": "claudeAutocomplete.clearCache",
-        "title": "Claude: Clear Completion Cache"
+        "command": "aiAutocomplete.clearCache",
+        "title": "AI: Clear Completion Cache"
       },
       {
-        "command": "claudeAutocomplete.triggerCompletion",
-        "title": "Claude: Trigger Completion Manually"
+        "command": "aiAutocomplete.triggerCompletion",
+        "title": "AI: Trigger Completion Manually"
       },
       {
-        "command": "claudeAutocomplete.acceptCompletion",
-        "title": "Claude: Accept Completion (Tab)"
+        "command": "aiAutocomplete.acceptCompletion",
+        "title": "AI: Accept Completion (Tab)"
       },
       {
-        "command": "claudeAutocomplete.rejectCompletion",
-        "title": "Claude: Reject Completion (Escape)"
+        "command": "aiAutocomplete.rejectCompletion",
+        "title": "AI: Reject Completion (Escape)"
       }
     ],
     "keybindings": [
       {
-        "command": "claudeAutocomplete.triggerCompletion",
+        "command": "aiAutocomplete.triggerCompletion",
         "key": "ctrl+shift+space",
         "mac": "cmd+shift+space",
         "when": "editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
       },
       {
-        "command": "claudeAutocomplete.acceptCompletion",
+        "command": "aiAutocomplete.acceptCompletion",
         "key": "tab",
-        "when": "(claudeSuggestionVisible || inlineSuggestionsVisible) && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
+        "when": "(aiSuggestionVisible || inlineSuggestionsVisible) && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
       },
       {
-        "command": "claudeAutocomplete.rejectCompletion",
+        "command": "aiAutocomplete.rejectCompletion",
         "key": "escape",
-        "when": "claudeSuggestionVisible && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
+        "when": "aiSuggestionVisible && editorTextFocus && (editorLangId == javascript || editorLangId == typescript || editorLangId == javascriptreact || editorLangId == typescriptreact || editorLangId == dart)"
       }
     ]
   },

@@ -1,6 +1,6 @@
 # AI Autocomplete for VS Code
 
-AI-powered inline code completions using Claude API for JavaScript, TypeScript, and Dart.
+AI-powered inline code completions for JavaScript, TypeScript, and Dart (Bring your own API key).
 
 ## Features
 
@@ -31,14 +31,14 @@ AI-powered inline code completions using Claude API for JavaScript, TypeScript, 
 **Option A: Via Command Palette**
 
 1. Open VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-2. Run `Claude: Set API Key`
+2. Run `AIAutoComplete: Set API Key`
 3. Paste your API key when prompted
 
 **Option B: Via Settings**
 
 1. Open Settings (`Ctrl+,` / `Cmd+,`)
-2. Search for "Claude Autocomplete"
-3. Paste your API key in the `claudeAutocomplete.apiKey` field
+2. Search for "AI Autocomplete"
+3. Paste your API key in the `aiAutocomplete.apiKey` field
 
 ## Usage
 
@@ -47,7 +47,7 @@ AI-powered inline code completions using Claude API for JavaScript, TypeScript, 
 Completions appear automatically as you type in supported languages. The extension:
 
 - Extracts context around your cursor
-- Sends it to Claude API
+- Sends it to API
 - Displays suggestions inline
 - Caches results to minimize API calls
 
@@ -59,24 +59,24 @@ Press `Ctrl+Shift+Space` (or `Cmd+Shift+Space` on Mac) to manually request a com
 
 Available commands in the Command Palette:
 
-- `Claude: Set API Key` - Update your API key
-- `Claude: Toggle Autocomplete` - Enable/disable the extension
-- `Claude: Clear Completion Cache` - Clear cached completions
-- `Claude: Trigger Completion Manually` - Request a completion manually
+- `AI Autocomplete: Set API Key` - Update your API key
+- `AI Autocomplete: Toggle Autocomplete` - Enable/disable the extension
+- `AI Autocomplete: Clear Completion Cache` - Clear cached completions
+- `AI Autocomplete: Trigger Completion Manually` - Request a completion manually
 
 ## Configuration
 
-Open Settings and search for "Claude Autocomplete" to customize:
+Open Settings and search for "AI Autocomplete" to customize:
 
-| Setting                                 | Default                    | Description                                 |
-| --------------------------------------- | -------------------------- | ------------------------------------------- |
-| `claudeAutocomplete.enabled`            | `true`                     | Enable/disable completions                  |
-| `claudeAutocomplete.model`              | `claude-sonnet-4-20250514` | Model to use                                |
-| `claudeAutocomplete.maxTokens`          | `300`                      | Max tokens per completion (100-1000)        |
-| `claudeAutocomplete.temperature`        | `0.2`                      | Determinism (0=exact, 1=creative)           |
-| `claudeAutocomplete.debounceDelay`      | `300`                      | Wait time (ms) before requesting (100-2000) |
-| `claudeAutocomplete.contextLinesBefore` | `30`                       | Context lines before cursor (10-100)        |
-| `claudeAutocomplete.contextLinesAfter`  | `10`                       | Context lines after cursor (0-50)           |
+| Setting                             | Default                    | Description                                 |
+| ----------------------------------- | -------------------------- | ------------------------------------------- |
+| `aiAutocomplete.enabled`            | `true`                     | Enable/disable completions                  |
+| `aiAutocomplete.model`              | `claude-sonnet-4-20250514` | Model to use                                |
+| `aiAutocomplete.maxTokens`          | `300`                      | Max tokens per completion (100-1000)        |
+| `aiAutocomplete.temperature`        | `0.2`                      | Determinism (0=exact, 1=creative)           |
+| `aiAutocomplete.debounceDelay`      | `300`                      | Wait time (ms) before requesting (100-2000) |
+| `aiAutocomplete.contextLinesBefore` | `30`                       | Context lines before cursor (10-100)        |
+| `aiAutocomplete.contextLinesAfter`  | `10`                       | Context lines after cursor (0-50)           |
 
 ## Cost Estimation
 
@@ -113,7 +113,7 @@ Example:
 
 ### "API key not configured"
 
-- Run `Claude: Set API Key` command
+- Run `AIAutocomplete: Set API Key` command
 - Or add your key to VS Code settings
 
 ### "Rate limited by API"
@@ -132,7 +132,7 @@ Example:
 - Ensure language is supported (JS/TS/Dart)
 - Check you're not in a comment or string
 - Verify API key is valid
-- Check VS Code output channel: `Claude Autocomplete`
+- Check VS Code output channel: `AI Autocomplete`
 
 ## Privacy & Security
 
@@ -145,18 +145,12 @@ Example:
 
 MIT
 
-## Links
-
-- [Anthropic Console](https://console.anthropic.com)
-- [Claude Documentation](https://docs.anthropic.com)
-- [VS Code Extension Guide](https://code.visualstudio.com/api)
-
 ## Support
 
 For issues or questions:
 
 1. Check the [troubleshooting section](#troubleshooting)
-2. View logs in VS Code output channel: `Claude Autocomplete`
+2. View logs in VS Code output channel: `AI Autocomplete`
 3. File an issue [here](https://forms.gle/JuBJbX2LbTvPar9b6)
 
 ---
