@@ -1,6 +1,6 @@
 {
-  "name": "ai-autocomplete-siffatahmed",
-  "displayName": "AI Autocomplete",
+  "name": "ai-code-autocomplete",
+  "displayName": "AI Code Autocomplete",
   "description": "AI-powered code completions for JavaScript, TypeScript, and Dart",
   "icon": "my-extension-icon.png",
   "version": "0.1.0",
