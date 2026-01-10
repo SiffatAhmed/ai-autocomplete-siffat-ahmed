@@ -61,7 +61,7 @@ export class AIClient {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': this.apiKey,
-          'anthropic-version': '2024-06-01',
+          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
           model: options.model,
