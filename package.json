@@ -1,9 +1,9 @@
 {
-  "name": "ai-autocomplete-siffat-ahmed",
-  "displayName": "AI Autocomplete",
+  "name": "ai-code-autocomplete",
+  "displayName": "AI Code Autocomplete",
   "description": "AI-powered code completions for JavaScript, TypeScript, and Dart",
   "icon": "my-extension-icon.png",
-  "version": "0.1.3",
+  "version": "0.1.0",
   "publisher": "siffat-ahmed",
   "license": "MIT",
   "engines": {
