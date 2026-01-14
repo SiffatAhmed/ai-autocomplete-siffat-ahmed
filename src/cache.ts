@@ -114,3 +114,9 @@ export class LRUCache {
     }
   }
 }
+
+var num=1;
+var num3 = 5;
+
+var sum=num + num3;
+var prod=num * num3;
