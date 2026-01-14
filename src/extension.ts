@@ -30,6 +30,13 @@ export function activate(context: vscode.ExtensionContext) {
   // Attach status bar to completion provider
   completionProvider.setStatusBar(statusBar);
 
+  // Set up callback for automatic completions
+  completionProvider.setCompletionCallback((editor, text, position) => {
+    if (suggestionManager) {
+      suggestionManager.showSuggestion(editor, text, position);
+    }
+  });
+
   // Get initial configuration
   ConfigManager.getConfig().then((config) => {
     if (config.apiKey) {
