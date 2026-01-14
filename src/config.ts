@@ -4,11 +4,8 @@ export interface AIConfig {
   apiKey: string;
   enabled: boolean;
   model: string;
-  maxTokens: number;
   temperature: number;
   debounceDelay: number;
-  contextLinesBefore: number;
-  contextLinesAfter: number;
 }
 
 export class ConfigManager {
@@ -32,11 +29,8 @@ export class ConfigManager {
       apiKey,
       enabled: config.get<boolean>('enabled') ?? true,
       model: config.get<string>('model') || 'claude-3-5-haiku-20241022',
-      maxTokens: config.get<number>('maxTokens') || 300,
       temperature: config.get<number>('temperature') ?? 0.2,
       debounceDelay: config.get<number>('debounceDelay') || 300,
-      contextLinesBefore: config.get<number>('contextLinesBefore') || 30,
-      contextLinesAfter: config.get<number>('contextLinesAfter') || 10,
     };
   }
 
@@ -50,6 +44,16 @@ export class ConfigManager {
   static async setModel(model: string): Promise<void> {
     const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
     await config.update('model', model, vscode.ConfigurationTarget.Global);
+  }
+
+  static async setTemperature(temperature: number): Promise<void> {
+    const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
+    await config.update('temperature', temperature, vscode.ConfigurationTarget.Global);
+  }
+
+  static async setDebounceDelay(delay: number): Promise<void> {
+    const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
+    await config.update('debounceDelay', delay, vscode.ConfigurationTarget.Global);
   }
 
   static async toggleEnabled(): Promise<void> {
