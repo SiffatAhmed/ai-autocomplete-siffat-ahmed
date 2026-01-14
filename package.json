@@ -3,7 +3,7 @@
   "displayName": "AI Code Autocomplete",
   "description": "AI-powered code completions for JavaScript, TypeScript, and Dart",
   "icon": "my-extension-icon.png",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "siffat-ahmed",
   "license": "MIT",
   "engines": {
@@ -54,13 +54,6 @@
           "default": "claude-3-5-haiku-20241022",
           "description": "Claude model to use"
         },
-        "aiAutocomplete.maxTokens": {
-          "type": "number",
-          "default": 300,
-          "minimum": 100,
-          "maximum": 1000,
-          "description": "Maximum tokens for completion"
-        },
         "aiAutocomplete.temperature": {
           "type": "number",
           "default": 0.2,
@@ -74,51 +67,45 @@
           "minimum": 100,
           "maximum": 2000,
           "description": "Delay in ms before requesting completion"
-        },
-        "aiAutocomplete.contextLinesBefore": {
-          "type": "number",
-          "default": 30,
-          "minimum": 10,
-          "maximum": 100,
-          "description": "Number of lines before cursor to include as context"
-        },
-        "aiAutocomplete.contextLinesAfter": {
-          "type": "number",
-          "default": 10,
-          "minimum": 0,
-          "maximum": 50,
-          "description": "Number of lines after cursor to include as context"
         }
       }
     },
     "commands": [
       {
         "command": "aiAutocomplete.setApiKey",
-        "title": "AI: Set API Key"
+        "title": "AI Autocomplete: Set API Key"
       },
       {
         "command": "aiAutocomplete.selectModel",
-        "title": "AI: Select Model"
+        "title": "AI Autocomplete: Select Model"
       },
       {
         "command": "aiAutocomplete.toggleEnabled",
-        "title": "AI: Toggle Autocomplete"
+        "title": "AI Autocomplete: Toggle Autocomplete"
+      },
+      {
+        "command": "aiAutocomplete.setTemperature",
+        "title": "AI Autocomplete: Set Temperature"
+      },
+      {
+        "command": "aiAutocomplete.setDebounceDelay",
+        "title": "AI Autocomplete: Set Debounce Delay"
       },
       {
         "command": "aiAutocomplete.clearCache",
-        "title": "AI: Clear Completion Cache"
+        "title": "AI Autocomplete: Clear Completion Cache"
       },
       {
         "command": "aiAutocomplete.triggerCompletion",
-        "title": "AI: Trigger Completion Manually"
+        "title": "AI Autocomplete: Trigger Completion Manually"
       },
       {
         "command": "aiAutocomplete.acceptCompletion",
-        "title": "AI: Accept Completion (Tab)"
+        "title": "AI Autocomplete: Accept Completion (Tab)"
       },
       {
         "command": "aiAutocomplete.rejectCompletion",
-        "title": "AI: Reject Completion (Escape)"
+        "title": "AI Autocomplete: Reject Completion (Escape)"
       }
     ],
     "keybindings": [

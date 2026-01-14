@@ -60,7 +60,10 @@ Press `Ctrl+Shift+Space` (or `Cmd+Shift+Space` on Mac) to manually request a com
 Available commands in the Command Palette:
 
 - `AI Autocomplete: Set API Key` - Update your API key
+- `AI Autocomplete: Select Model` - Choose which Claude model to use
 - `AI Autocomplete: Toggle Autocomplete` - Enable/disable the extension
+- `AI Autocomplete: Set Temperature` - Adjust creativity (0=deterministic, 1=creative)
+- `AI Autocomplete: Set Debounce Delay` - Change wait time before requesting (100-2000ms)
 - `AI Autocomplete: Clear Completion Cache` - Clear cached completions
 - `AI Autocomplete: Trigger Completion Manually` - Request a completion manually
 
@@ -68,15 +71,12 @@ Available commands in the Command Palette:
 
 Open Settings and search for "AI Autocomplete" to customize:
 
-| Setting                             | Default                    | Description                                 |
-| ----------------------------------- | -------------------------- | ------------------------------------------- |
-| `aiAutocomplete.enabled`            | `true`                     | Enable/disable completions                  |
-| `aiAutocomplete.model`              | `claude-sonnet-4-20250514` | Model to use                                |
-| `aiAutocomplete.maxTokens`          | `300`                      | Max tokens per completion (100-1000)        |
-| `aiAutocomplete.temperature`        | `0.2`                      | Determinism (0=exact, 1=creative)           |
-| `aiAutocomplete.debounceDelay`      | `300`                      | Wait time (ms) before requesting (100-2000) |
-| `aiAutocomplete.contextLinesBefore` | `30`                       | Context lines before cursor (10-100)        |
-| `aiAutocomplete.contextLinesAfter`  | `10`                       | Context lines after cursor (0-50)           |
+| Setting                        | Default                    | Description                                 |
+| ------------------------------ | -------------------------- | ------------------------------------------- |
+| `aiAutocomplete.enabled`       | `true`                     | Enable/disable completions                  |
+| `aiAutocomplete.model`         | `claude-sonnet-4-20250514` | Model to use                                |
+| `aiAutocomplete.temperature`   | `0.2`                      | Determinism (0=exact, 1=creative)           |
+| `aiAutocomplete.debounceDelay` | `300`                      | Wait time (ms) before requesting (100-2000) |
 
 ## Cost Estimation
 

@@ -158,6 +158,62 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  const setTemperatureCommand = vscode.commands.registerCommand('aiAutocomplete.setTemperature', async () => {
+    const config = await ConfigManager.getConfig();
+    const currentTemp = config.temperature;
+
+    const input = await vscode.window.showInputBox({
+      prompt: 'Set temperature (0=deterministic, 1=creative)',
+      value: currentTemp.toString(),
+      placeHolder: '0.2',
+      validateInput: (value) => {
+        const num = parseFloat(value);
+        if (isNaN(num) || num < 0 || num > 1) {
+          return 'Temperature must be a number between 0 and 1';
+        }
+        return null;
+      }
+    });
+
+    if (input !== undefined) {
+      const temperature = parseFloat(input);
+      try {
+        await ConfigManager.setTemperature(temperature);
+        vscode.window.showInformationMessage(`AI Autocomplete: Temperature set to ${temperature}`);
+      } catch (error) {
+        vscode.window.showErrorMessage('Failed to set temperature');
+      }
+    }
+  });
+
+  const setDebounceDelayCommand = vscode.commands.registerCommand('aiAutocomplete.setDebounceDelay', async () => {
+    const config = await ConfigManager.getConfig();
+    const currentDelay = config.debounceDelay;
+
+    const input = await vscode.window.showInputBox({
+      prompt: 'Set debounce delay in milliseconds (100-2000)',
+      value: currentDelay.toString(),
+      placeHolder: '300',
+      validateInput: (value) => {
+        const num = parseInt(value);
+        if (isNaN(num) || num < 100 || num > 2000) {
+          return 'Delay must be a number between 100 and 2000';
+        }
+        return null;
+      }
+    });
+
+    if (input !== undefined) {
+      const delay = parseInt(input);
+      try {
+        await ConfigManager.setDebounceDelay(delay);
+        vscode.window.showInformationMessage(`AI Autocomplete: Debounce delay set to ${delay}ms`);
+      } catch (error) {
+        vscode.window.showErrorMessage('Failed to set debounce delay');
+      }
+    }
+  });
+
   const clearCacheCommand = vscode.commands.registerCommand('aiAutocomplete.clearCache', () => {
     if (completionProvider) {
       // Cache is cleared through provider disposal and recreation
@@ -242,6 +298,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(setApiKeyCommand);
   context.subscriptions.push(selectModelCommand);
   context.subscriptions.push(toggleEnabledCommand);
+  context.subscriptions.push(setTemperatureCommand);
+  context.subscriptions.push(setDebounceDelayCommand);
   context.subscriptions.push(clearCacheCommand);
   context.subscriptions.push(triggerCompletionCommand);
 

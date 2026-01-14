@@ -98,8 +98,8 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
     const ctx = ContextManager.extractContext(
       document,
       position,
-      config.contextLinesBefore,
-      config.contextLinesAfter
+      30,
+      30
     );
     const cacheKey = LRUCache.generateKey(ctx.codeBefore + ctx.codeAfter, `${position.line}:${position.character}`, document.languageId);
 
@@ -244,7 +244,7 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
       const response = await this.aiClient.requestCompletion(
         {
           model: config.model,
-          maxTokens: config.maxTokens,
+          maxTokens: 300,
           temperature: config.temperature,
           systemPrompt,
           userPrompt,
