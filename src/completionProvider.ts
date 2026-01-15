@@ -53,8 +53,8 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
   /**
    * Initialize the provider with API key
    */
-  init(apiKey: string): void {
-    this.aiClient = new AIClient(apiKey);
+  init(claudeApiKey: string, geminiApiKey: string): void {
+    this.aiClient = new AIClient({ claude: claudeApiKey, gemini: geminiApiKey });
   }
 
   /**
@@ -75,10 +75,14 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
     }
 
     // Check if API is configured
-    if (!this.aiClient || !config.apiKey) {
+    const isGemini = config.model.toLowerCase().includes('gemini');
+    const isClaude = config.model.toLowerCase().includes('claude');
+    const hasKey = (isGemini && config.geminiApiKey) || (isClaude && config.claudeApiKey);
+
+    if (!this.aiClient || !hasKey) {
       if (!this.notificationShown) {
         vscode.window.showWarningMessage(
-          'AI Autocomplete: API key not configured',
+          `AI Autocomplete: ${isGemini ? 'Gemini' : 'Claude'} API key not configured`,
           'Set API Key'
         ).then((selection) => {
           if (selection === 'Set API Key') {

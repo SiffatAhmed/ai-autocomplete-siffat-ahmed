@@ -18,15 +18,16 @@ export interface AIResponse {
 }
 
 export class AIClient {
-  private apiKey: string;
-  private baseUrl = 'https://api.anthropic.com/v1';
+  private apiKeys: { claude?: string; gemini?: string };
+  private claudeBaseUrl = 'https://api.anthropic.com/v1';
+  private geminiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
   private retryCount = 0;
   private maxRetries = 1;
   private backoffMs = 300;
   private outputChannel: vscode.OutputChannel;
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
+  constructor(apiKeys: { claude?: string; gemini?: string }) {
+    this.apiKeys = apiKeys;
     this.outputChannel = vscode.window.createOutputChannel('AI Autocomplete');
   }
 
@@ -37,10 +38,25 @@ export class AIClient {
     options: AIRequestOptions,
     cancellationToken?: vscode.CancellationToken
   ): Promise<AIResponse> {
-    if (!this.apiKey) {
-      throw new Error('API key not configured');
-    }
+    const isGemini = options.model.startsWith('gemini');
 
+    if (isGemini) {
+      if (!this.apiKeys.gemini) {
+        throw new Error('Gemini API key not configured');
+      }
+      return this.requestGeminiCompletion(options, cancellationToken);
+    } else {
+      if (!this.apiKeys.claude) {
+        throw new Error('Claude API key not configured');
+      }
+      return this.requestClaudeCompletion(options, cancellationToken);
+    }
+  }
+
+  private async requestGeminiCompletion(
+    options: AIRequestOptions,
+    cancellationToken?: vscode.CancellationToken
+  ): Promise<AIResponse> {
     const timeoutMs = options.timeoutMs || 5000;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -56,11 +72,79 @@ export class AIClient {
         throw new Error('Request cancelled');
       }
 
-      const response = await fetch(`${this.baseUrl}/messages`, {
+      const url = `${this.geminiBaseUrl}/${options.model}:generateContent?key=${this.apiKeys.gemini}`;
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `${options.systemPrompt}\n\n${options.userPrompt}`
+            }]
+          }],
+          generationConfig: {
+            temperature: options.temperature,
+            maxOutputTokens: options.maxTokens,
+          }
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as any;
+        const errorMessage = errorData?.error?.message || response.statusText;
+        throw new Error(`Gemini API Error: ${errorMessage}`);
+      }
+
+      this.retryCount = 0;
+      const data = await response.json() as any;
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      return {
+        content,
+        usage: {
+          inputTokens: data.usageMetadata?.promptTokenCount || 0,
+          outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
+        },
+      };
+
+    } catch (error) {
+      if (cancelled) throw new Error('Request cancelled');
+      if (error instanceof Error && error.name === 'AbortError') throw new Error('Request timeout');
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+      cancellationListener?.dispose();
+    }
+  }
+
+  private async requestClaudeCompletion(
+    options: AIRequestOptions,
+    cancellationToken?: vscode.CancellationToken
+  ): Promise<AIResponse> {
+    const timeoutMs = options.timeoutMs || 5000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    let cancelled = false;
+
+    const cancellationListener = cancellationToken?.onCancellationRequested(() => {
+      cancelled = true;
+      controller.abort();
+    });
+
+    try {
+      if (cancelled) {
+        throw new Error('Request cancelled');
+      }
+
+      const response = await fetch(`${this.claudeBaseUrl}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.apiKeys.claude!,
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
@@ -79,11 +163,11 @@ export class AIClient {
       });
 
       if (!response.ok) {
-        const errorData = await response.json() as Record<string, unknown>;
-        const errorMessage = (errorData?.error as Record<string, unknown>)?.message || response.statusText;
+        const errorData = await response.json() as any;
+        const errorMessage = errorData?.error?.message || response.statusText;
 
         if (response.status === 401) {
-          throw new Error('Invalid API key');
+          throw new Error('Invalid Claude API key');
         }
 
         if (response.status === 429) {
@@ -92,7 +176,7 @@ export class AIClient {
             this.retryCount++;
             await this.delay(this.backoffMs * Math.pow(2, this.retryCount - 1));
             this.backoffMs = Math.min(this.backoffMs * 2, 2000);
-            return this.requestCompletion(options, cancellationToken);
+            return this.requestClaudeCompletion(options, cancellationToken);
           }
           throw new Error('Rate limited by API');
         }
@@ -101,31 +185,21 @@ export class AIClient {
       }
 
       this.retryCount = 0;
-      const data = await response.json() as Record<string, unknown>;
-      const contentArray = (data.content as unknown[]) || [];
-      const firstContent = (contentArray[0] as Record<string, unknown>) || {};
-      const completion = (firstContent.text as string) || '';
+      const data = await response.json() as any;
+      const content = data.content?.[0]?.text || '';
 
       return {
-        content: completion,
+        content,
         usage: {
-          inputTokens: ((data.usage as Record<string, unknown>)?.input_tokens as number) || 0,
-          outputTokens: ((data.usage as Record<string, unknown>)?.output_tokens as number) || 0,
+          inputTokens: data.usage?.input_tokens || 0,
+          outputTokens: data.usage?.output_tokens || 0,
         },
       };
+
     } catch (error) {
-      if (cancelled) {
-        throw new Error('Request cancelled');
-      }
-
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error('Request timeout');
-        }
-        throw error;
-      }
-
-      throw new Error('Unknown error occurred');
+      if (cancelled) throw new Error('Request cancelled');
+      if (error instanceof Error && error.name === 'AbortError') throw new Error('Request timeout');
+      throw error;
     } finally {
       clearTimeout(timeoutId);
       cancellationListener?.dispose();
