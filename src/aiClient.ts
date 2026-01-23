@@ -151,12 +151,23 @@ export class AIClient {
           model: options.model,
           max_tokens: options.maxTokens,
           temperature: options.temperature,
-          system: options.systemPrompt,
+          system: [
+            {
+              type: "text",
+              text: options.systemPrompt,
+              cache_control: { type: "ephemeral" }
+            }
+          ],
           messages: [
             {
-              role: 'user',
-              content: options.userPrompt,
-            },
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: options.userPrompt
+                }
+              ]
+            }
           ],
         }),
         signal: controller.signal,
