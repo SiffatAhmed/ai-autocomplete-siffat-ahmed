@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 export interface CodeContext {
   codeBefore: string;
+  codeCurrentLine: string;
   codeAfter: string;
   filePath: string;
   languageId: string;
@@ -43,6 +44,7 @@ export class ContextManager {
 
     return {
       codeBefore,
+      codeCurrentLine: document.lineAt(cursorLine).text,
       codeAfter,
       filePath: document.fileName,
       languageId: document.languageId,
@@ -67,7 +69,8 @@ CRITICAL INSTRUCTIONS:
 4. Match the code style and conventions in the provided context
 5. Use modern ES6+ syntax (arrow functions, const/let, destructuring)
 6. Do not duplicate closing brackets/parentheses that already exist after <CURSOR>
-7. Return the completion as plain text only`;
+7. Do NOT repeat variable names or assignment operators if they appear before <CURSOR>
+8. Return the completion as plain text only`;
 
       case 'typescript':
       case 'typescriptreact':
@@ -80,8 +83,9 @@ CRITICAL INSTRUCTIONS:
 4. Match the code style and conventions in the provided context
 5. Use modern ES6+ syntax with proper TypeScript types
 6. Do not duplicate closing brackets/parentheses that already exist after <CURSOR>
-7. Infer types from context when helpful
-8. Return the completion as plain text only`;
+7. Do NOT repeat variable names or assignment operators if they appear before <CURSOR>
+8. Infer types from context when helpful
+9. Return the completion as plain text only`;
 
       case 'dart':
         return `You are an expert Dart code completion assistant. Your task is to complete the code at the <CURSOR> position.
@@ -93,10 +97,11 @@ CRITICAL INSTRUCTIONS:
 4. Match the code style and conventions in the provided context
 5. Use Dart best practices (null safety, const constructors, proper typing)
 6. Do not duplicate closing brackets/parentheses that already exist after <CURSOR>
-7. Return the completion as plain text only`;
+7. Do NOT repeat variable names or assignment operators if they appear before <CURSOR>
+8. Return the completion as plain text only`;
 
       default:
-        return `Complete the code at <CURSOR>. Return ONLY the completion code as plain text, no explanations. Complete one logical expression using available variables and context. Do not add closing brackets/parentheses that already exist after the cursor.`;
+        return `Complete the code at <CURSOR>. Return ONLY the completion code as plain text. Do not repeat code before cursor.`;
     }
   }
 
@@ -156,25 +161,45 @@ CRITICAL INSTRUCTIONS:
    * Build user prompt for completion request
    */
   static buildUserPrompt(context: CodeContext): string {
-    const { codeBefore, codeAfter, filePath, languageId, cursorLine, cursorColumn } = context;
+    const { codeBefore, codeCurrentLine, codeAfter, filePath, languageId, cursorLine, cursorColumn } = context;
     const availableNames = this.extractAvailableNames(codeBefore);
+
+    // Split the current line at the exact cursor position
+    const linePrefix = codeCurrentLine.substring(0, cursorColumn);
+    const lineSuffix = codeCurrentLine.substring(cursorColumn);
+
+    // Construct the full code block ensuring proper newlines
+    const contextParts = [];
+    if (codeBefore) {
+      contextParts.push(codeBefore);
+    }
+    contextParts.push(`${linePrefix}<CURSOR>${lineSuffix}`);
+    if (codeAfter) {
+      contextParts.push(codeAfter);
+    }
+    const fullCode = contextParts.join('\n');
 
     let prompt = `File: ${filePath}
 Language: ${languageId}
-Current line: ${cursorLine + 1}
-Current column: ${cursorColumn + 1}
+// Current line: ${cursorLine + 1}
+// Current column: ${cursorColumn + 1}
 
-Available variables and functions in scope:
+Available variables/functions:
 ${availableNames.variables.length > 0 ? `Variables: ${availableNames.variables.join(', ')}` : 'Variables: none'}
 ${availableNames.functions.length > 0 ? `Functions: ${availableNames.functions.join(', ')}` : 'Functions: none'}
 
-Code before cursor:
-${codeBefore}
-<CURSOR>
-Code after cursor:
-${codeAfter}
+Below is the code context using a <CURSOR> marker to indicate the insertion point.
+[CODE START]
+${fullCode}
+[CODE END]
 
-Complete the code at <CURSOR> using the available variables and functions. Output only the code completion.`;
+CRITICAL INSTRUCTIONS:
+1. Output ONLY the code to insert at <CURSOR>.
+2. Do NOT repeat any code already present in [CODE START] before the <CURSOR>.
+3. Do NOT output a new line if one is not needed.
+4. If the statement is incomplete (e.g. 'var x ='), clearly provide the value.
+5. Do NOT output markdown formatting (no \`\`\`).
+6. Your response must seamlessly fit into the <CURSOR> position.`;
 
     return prompt;
   }

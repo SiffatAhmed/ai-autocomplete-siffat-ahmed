@@ -13,6 +13,7 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
   private notificationShown = false;
   private statusBar: vscode.StatusBarItem | null = null;
   private isFetching = false;
+  private onCompletionCallback: ((editor: vscode.TextEditor, text: string, position: vscode.Position) => void) | null = null;
 
   constructor() {
     this.cache = new LRUCache(100, 300);
@@ -23,6 +24,13 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
    */
   setStatusBar(statusBar: vscode.StatusBarItem): void {
     this.statusBar = statusBar;
+  }
+
+  /**
+   * Set callback for when a completion is found automatically
+   */
+  setCompletionCallback(callback: (editor: vscode.TextEditor, text: string, position: vscode.Position) => void): void {
+    this.onCompletionCallback = callback;
   }
 
   /**
@@ -45,8 +53,8 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
   /**
    * Initialize the provider with API key
    */
-  init(apiKey: string): void {
-    this.aiClient = new AIClient(apiKey);
+  init(claudeApiKey: string, geminiApiKey: string): void {
+    this.aiClient = new AIClient({ claude: claudeApiKey, gemini: geminiApiKey });
   }
 
   /**
@@ -67,10 +75,14 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
     }
 
     // Check if API is configured
-    if (!this.aiClient || !config.apiKey) {
+    const isGemini = config.model.toLowerCase().includes('gemini');
+    const isClaude = config.model.toLowerCase().includes('claude');
+    const hasKey = (isGemini && config.geminiApiKey) || (isClaude && config.claudeApiKey);
+
+    if (!this.aiClient || !hasKey) {
       if (!this.notificationShown) {
         vscode.window.showWarningMessage(
-          'AI Autocomplete: API key not configured',
+          `AI Autocomplete: ${isGemini ? 'Gemini' : 'Claude'} API key not configured`,
           'Set API Key'
         ).then((selection) => {
           if (selection === 'Set API Key') {
@@ -336,22 +348,33 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
         }
 
         // Set new timer to trigger completion
-        const timer = setTimeout(() => {
+        const timer = setTimeout(async () => {
           if (vscode.window.activeTextEditor) {
             // Call provideInlineCompletionItems directly to get completions
+            // Use Invoke kind to skip the internal debounce since we already debounced here
             const context: vscode.InlineCompletionContext = {
-              triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+              triggerKind: vscode.InlineCompletionTriggerKind.Invoke,
               selectedCompletionInfo: undefined,
             };
 
-            this.provideInlineCompletionItems(
-              editor.document,
-              position,
-              context,
-              new vscode.CancellationTokenSource().token
-            ).catch((error) => {
+            try {
+              const items = await this.provideInlineCompletionItems(
+                editor.document,
+                position,
+                context,
+                new vscode.CancellationTokenSource().token
+              );
+
+              if (items && items.length > 0 && this.onCompletionCallback) {
+                const item = items[0];
+                const insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText?.value || '';
+                if (insertText) {
+                  this.onCompletionCallback(editor, insertText, position);
+                }
+              }
+            } catch (error) {
               console.error('Error in automatic completion:', error);
-            });
+            }
           }
           this.debounceTimers.delete(debounceKey);
         }, config.debounceDelay);

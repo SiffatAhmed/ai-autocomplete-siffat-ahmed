@@ -30,11 +30,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Attach status bar to completion provider
   completionProvider.setStatusBar(statusBar);
 
+  // Set up callback for automatic completions
+  completionProvider.setCompletionCallback((editor, text, position) => {
+    if (suggestionManager) {
+      suggestionManager.showSuggestion(editor, text, position);
+    }
+  });
+
   // Get initial configuration
   ConfigManager.getConfig().then((config) => {
-    if (config.apiKey) {
-      completionProvider?.init(config.apiKey);
-    }
+    completionProvider?.init(config.claudeApiKey, config.geminiApiKey);
   });
 
   // Register inline completion provider for supported languages
@@ -64,18 +69,30 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register commands
   const setApiKeyCommand = vscode.commands.registerCommand('aiAutocomplete.setApiKey', async () => {
+    const provider = await vscode.window.showQuickPick(['Claude', 'Gemini'], {
+      placeHolder: 'Select API Key to configure',
+    });
+
+    if (!provider) return;
+
     const apiKey = await vscode.window.showInputBox({
-      prompt: 'Enter your Anthropic API key',
+      prompt: `Enter your ${provider} API key`,
       password: true,
-      placeHolder: 'sk-ant-...',
+      placeHolder: provider === 'Claude' ? 'sk-ant-...' : 'AIza...',
     });
 
     if (apiKey) {
       try {
-        await ConfigManager.setApiKey(apiKey);
-        completionProvider?.init(apiKey);
+        if (provider === 'Claude') {
+          await ConfigManager.setClaudeApiKey(apiKey);
+        } else {
+          await ConfigManager.setGeminiApiKey(apiKey);
+        }
+
+        const config = await ConfigManager.getConfig();
+        completionProvider?.init(config.claudeApiKey, config.geminiApiKey);
         completionProvider?.resetNotificationFlag();
-        vscode.window.showInformationMessage('AI Autocomplete: API key configured successfully');
+        vscode.window.showInformationMessage(`AI Autocomplete: ${provider} API key configured successfully`);
       } catch (error) {
         vscode.window.showErrorMessage('Failed to save API key');
       }
@@ -84,6 +101,31 @@ export function activate(context: vscode.ExtensionContext) {
 
   const selectModelCommand = vscode.commands.registerCommand('aiAutocomplete.selectModel', async () => {
     const models = [
+      {
+        label: 'Gemini 3 Pro Preview (New Most Powerful)',
+        value: 'gemini-3-pro-preview',
+        pricing: { input: '$0.5', output: '$3', cache5m: 'NA', cache1h: '$1', cacheHit: '$0.05' }
+      },
+      {
+        label: 'Gemini 3 Flash Preview (New Fast & Cheap)',
+        value: 'gemini-3-flash-preview',
+        pricing: { input: '$0.5', output: '$3', cache5m: 'NA', cache1h: '$1', cacheHit: '$0.05' }
+      },
+      {
+        label: 'Gemini 2.5 Pro (Most Powerful)',
+        value: 'gemini-2.5-pro',
+        pricing: { input: '$1.25, prompts <= 200k tokens\n$2.50, prompts > 200k tokens', output: ' 	$10.00, prompts <= 200k tokens\n$15.00, prompts > 200k', cache5m: 'NA', cache1h: '$4.50 / 1,000,000 tokens per hour (storage price)', cacheHit: '$0.125, prompts <= 200k tokens\n$0.25, prompts > 200k' }
+      },
+      {
+        label: 'Gemini 2.5 Flash (Powerful)',
+        value: 'gemini-2.5-flash',
+        pricing: { input: '$0.3', output: '$2.5', cache5m: 'NA', cache1h: '$1', cacheHit: '$0.03' }
+      },
+      {
+        label: 'Gemini 2.5 Flash Lite (Fast & Cheap)',
+        value: 'gemini-2.5-flash-lite',
+        pricing: { input: '$0.1', output: '$0.30', cache5m: 'NA', cache1h: '$1', cacheHit: '$0.01' }
+      },
       {
         label: 'Claude Opus 4.5 (Newest - $5/$25)',
         value: 'claude-opus-4-5-20251101',
@@ -139,7 +181,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (selected) {
       try {
         await ConfigManager.setModel(selected.value);
-        const message = `AI Autocomplete: Using ${selected.label.split(' (')[0]}\n\nPricing per Million Tokens:\nInput: ${selected.pricing.input}\nOutput: ${selected.pricing.output}\n5m Cache Writes: ${selected.pricing.cache5m}\n1h Cache Writes: ${selected.pricing.cache1h}\nCache Hits: ${selected.pricing.cacheHit}`;
+        const message = `AI Autocomplete: Using ${selected.label.split(' (')[0]}`;
         vscode.window.showInformationMessage(message);
       } catch (error) {
         vscode.window.showErrorMessage('Failed to change model');
@@ -240,9 +282,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Check if API key is configured
     const config = await ConfigManager.getConfig();
-    if (!config.apiKey) {
+    const isGemini = config.model.startsWith('gemini');
+    const isClaude = config.model.startsWith('claude');
+
+    if ((isGemini && !config.geminiApiKey) || (isClaude && !config.claudeApiKey)) {
       const result = await vscode.window.showWarningMessage(
-        'AI Autocomplete: API key not configured',
+        `AI Autocomplete: ${isGemini ? 'Gemini' : 'Claude'} API key not configured`,
         'Set API Key'
       );
       if (result === 'Set API Key') {
@@ -325,9 +370,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Listen for configuration changes
   configChangeDisposable = ConfigManager.onConfigChange(async () => {
     const config = await ConfigManager.getConfig();
-    if (config.apiKey && !completionProvider?.['aiClient']) {
-      completionProvider?.init(config.apiKey);
-    }
+    completionProvider?.init(config.claudeApiKey, config.geminiApiKey);
   });
 
   context.subscriptions.push(configChangeDisposable);
