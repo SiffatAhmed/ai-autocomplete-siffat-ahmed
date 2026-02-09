@@ -4,8 +4,10 @@ AI-powered inline code completions for JavaScript, TypeScript, and Dart (Bring y
 
 ## Features
 
+- **Multiple AI Providers**: Claude (Anthropic), Gemini (Google), or Ollama (Local Models)
 - **Inline Completions**: Get AI-powered code suggestions as you type
 - **Language Support**: JavaScript, TypeScript, JSX, TSX, and Dart
+- **Local AI Support**: Run models offline with Ollama - no API costs!
 - **Smart Caching**: Reduces API calls with LRU cache
 - **Throttling**: Prevents API spam with configurable debounce
 - **Error Handling**: Graceful degradation with informative messages
@@ -19,26 +21,66 @@ AI-powered inline code completions for JavaScript, TypeScript, and Dart (Bring y
 
 ## Setup
 
-### 1. Get an API Key
+Choose your preferred AI provider:
+
+### Option 1: Local Models with Ollama (Recommended for Privacy & Cost)
+
+**Why Ollama?**
+- ✅ **100% Free** - No API costs
+- ✅ **Privacy** - Your code never leaves your machine
+- ✅ **Offline** - Works without internet
+- ✅ **Fast** - 2-5 second response times on modern hardware
+
+**Setup Steps:**
+
+1. **Install Ollama**
+   - Download from [ollama.ai](https://ollama.ai)
+   - Windows: Run the installer
+   - Mac: `brew install ollama`
+   - Linux: `curl -fsSL https://ollama.ai/install.sh | sh`
+
+2. **Pull a Model**
+   ```bash
+   # Lightweight model (recommended for autocomplete)
+   ollama pull gemma3:1b
+   
+   # OR a more powerful model
+   ollama pull deepseek-r1:8b
+   ```
+
+3. **Verify Ollama is Running**
+   ```bash
+   ollama list
+   ```
+   You should see your downloaded model(s)
+
+4. **Configure Extension**
+   - Open VS Code Command Palette (`Ctrl+Shift+P`)
+   - Run `AI Autocomplete: Select Model`
+   - Choose `Ollama (Local)`
+   - Run `AI Autocomplete: Set Ollama Model`
+   - Enter your model name (e.g., `gemma3:1b`)
+
+**Recommended Models:**
+- `gemma3:1b` - Fast, lightweight (1GB RAM)
+- `qwen2.5-coder:1.5b` - Optimized for code (2GB RAM)
+- `deepseek-r1:8b` - More accurate, slower (8GB RAM)
+
+### Option 2: Claude API (Anthropic)
 
 1. Go to [Anthropic Console](https://console.anthropic.com)
 2. Sign up or log in
 3. Navigate to "API Keys" section
 4. Create a new API key
+5. Run `AI Autocomplete: Set API Key` in VS Code
+6. Run `AI Autocomplete: Select Model` and choose a Claude model
 
-### 2. Configure the Extension
+### Option 3: Gemini API (Google)
 
-**Option A: Via Command Palette**
-
-1. Open VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-2. Run `AIAutoComplete: Set API Key`
-3. Paste your API key when prompted
-
-**Option B: Via Settings**
-
-1. Open Settings (`Ctrl+,` / `Cmd+,`)
-2. Search for "AI Autocomplete"
-3. Paste your API key in the `aiAutocomplete.apiKey` field
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Create an API key
+3. Run `AI Autocomplete: Set API Key` in VS Code
+4. Run `AI Autocomplete: Select Model` and choose a Gemini model
 
 ## Usage
 
@@ -59,8 +101,10 @@ Press `Ctrl+Shift+Space` (or `Cmd+Shift+Space` on Mac) to manually request a com
 
 Available commands in the Command Palette:
 
-- `AI Autocomplete: Set API Key` - Update your API key
-- `AI Autocomplete: Select Model` - Choose which Claude model to use
+- `AI Autocomplete: Set API Key` - Update your Claude/Gemini API key
+- `AI Autocomplete: Select Model` - Choose AI provider (Claude, Gemini, or Ollama)
+- `AI Autocomplete: Set Ollama Base URL` - Configure Ollama server URL (default: http://localhost:11434)
+- `AI Autocomplete: Set Ollama Model` - Choose which local model to use
 - `AI Autocomplete: Toggle Autocomplete` - Enable/disable the extension
 - `AI Autocomplete: Set Temperature` - Adjust creativity (0=deterministic, 1=creative)
 - `AI Autocomplete: Set Debounce Delay` - Change wait time before requesting (100-2000ms)
@@ -71,12 +115,14 @@ Available commands in the Command Palette:
 
 Open Settings and search for "AI Autocomplete" to customize:
 
-| Setting                        | Default                    | Description                                 |
-| ------------------------------ | -------------------------- | ------------------------------------------- |
-| `aiAutocomplete.enabled`       | `true`                     | Enable/disable completions                  |
-| `aiAutocomplete.model`         | `claude-sonnet-4-20250514` | Model to use                                |
-| `aiAutocomplete.temperature`   | `0.2`                      | Determinism (0=exact, 1=creative)           |
-| `aiAutocomplete.debounceDelay` | `300`                      | Wait time (ms) before requesting (100-2000) |
+| Setting                          | Default                      | Description                                 |
+| -------------------------------- | ---------------------------- | ------------------------------------------- |
+| `aiAutocomplete.enabled`         | `true`                       | Enable/disable completions                  |
+| `aiAutocomplete.model`           | `claude-3-5-haiku-20241022`  | Model to use (or "ollama" for local)        |
+| `aiAutocomplete.ollamaBaseUrl`   | `http://localhost:11434`     | Ollama server URL                           |
+| `aiAutocomplete.ollamaModel`     | `gemma3:1b`                  | Local Ollama model name                     |
+| `aiAutocomplete.temperature`     | `0.2`                        | Determinism (0=exact, 1=creative)           |
+| `aiAutocomplete.debounceDelay`   | `300`                        | Wait time (ms) before requesting (100-2000) |
 
 ## Cost Estimation
 
@@ -123,7 +169,13 @@ Example:
 
 ### "Request timeout"
 
-- The API took too long (>5s)
+**For Ollama:**
+- Ensure Ollama is running: `ollama list`
+- Check if model is loaded: `ollama run <model-name> "test"`
+- Verify base URL in settings (should be `http://localhost:11434` or `http://127.0.0.1:11434`)
+
+**For Claude/Gemini:**
+- The API took too long
 - Check your internet connection
 - Try again
 

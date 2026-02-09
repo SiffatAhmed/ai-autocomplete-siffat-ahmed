@@ -19,6 +19,7 @@ export interface AIResponse {
 
 export class AIClient {
   private apiKeys: { claude?: string; gemini?: string };
+  private ollamaConfig?: { baseUrl: string; model: string };
   private claudeBaseUrl = 'https://api.anthropic.com/v1';
   private geminiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
   private retryCount = 0;
@@ -26,8 +27,9 @@ export class AIClient {
   private backoffMs = 300;
   private outputChannel: vscode.OutputChannel;
 
-  constructor(apiKeys: { claude?: string; gemini?: string }) {
+  constructor(apiKeys: { claude?: string; gemini?: string }, ollamaConfig?: { baseUrl: string; model: string }) {
     this.apiKeys = apiKeys;
+    this.ollamaConfig = ollamaConfig;
     this.outputChannel = vscode.window.createOutputChannel('AI Autocomplete');
   }
 
@@ -38,9 +40,18 @@ export class AIClient {
     options: AIRequestOptions,
     cancellationToken?: vscode.CancellationToken
   ): Promise<AIResponse> {
-    const isGemini = options.model.startsWith('gemini');
+    const isGemini = options.model.toLowerCase().startsWith('gemini');
+    const isOllama = options.model.toLowerCase().startsWith('ollama') || (this.ollamaConfig && options.model === this.ollamaConfig.model);
 
-    if (isGemini) {
+    this.log(`[AIClient] requestCompletion called. Model: ${options.model}, isOllama: ${isOllama}, isGemini: ${isGemini}`, 'info');
+    this.log(`[AIClient] ollamaConfig present: ${!!this.ollamaConfig}`, 'info');
+
+    if (isOllama) {
+      if (!this.ollamaConfig) {
+        throw new Error('Ollama not configured');
+      }
+      return this.requestOllamaCompletion(options, cancellationToken);
+    } else if (isGemini) {
       if (!this.apiKeys.gemini) {
         throw new Error('Gemini API key not configured');
       }
@@ -53,11 +64,137 @@ export class AIClient {
     }
   }
 
+  private async requestOllamaCompletion(
+    options: AIRequestOptions,
+    cancellationToken?: vscode.CancellationToken
+  ): Promise<AIResponse> {
+    const timeoutMs = options.timeoutMs || 60000;
+    const startTime = Date.now();
+    this.log(`Starting Ollama request with timeout: ${timeoutMs}ms`, 'info');
+
+    let cancelled = false;
+    const cancellationListener = cancellationToken?.onCancellationRequested(() => {
+      cancelled = true;
+    });
+
+    try {
+      if (cancelled) {
+        throw new Error('Request cancelled');
+      }
+
+      // Use the model from options, or fallback to config if options model matches the generic "ollama" label
+      const modelToUse = (options.model === 'ollama' && this.ollamaConfig) ? this.ollamaConfig.model : options.model;
+      let baseUrl = this.ollamaConfig?.baseUrl || 'http://127.0.0.1:11434';
+
+      // Fix for Node.js 17+ / VS Code fetch issues with localhost preferring IPv6
+      if (baseUrl.includes('localhost')) {
+        baseUrl = baseUrl.replace('localhost', '127.0.0.1');
+      }
+
+      this.log(`Ollama Request: ${baseUrl}/api/generate, Model: ${modelToUse}`, 'info');
+
+      // Use Node.js http module instead of fetch (VS Code's fetch has issues with Ollama)
+      const http = await import('http');
+      const url = new URL(`${baseUrl}/api/generate`);
+
+      const postData = JSON.stringify({
+        model: modelToUse,
+        prompt: `${options.systemPrompt}\n\n${options.userPrompt}`,
+        stream: false,
+        options: {
+          temperature: options.temperature,
+          num_predict: options.maxTokens,
+        }
+      });
+
+      const response = await new Promise<any>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Request timeout'));
+        }, timeoutMs);
+
+        const req = http.request({
+          hostname: url.hostname,
+          port: url.port || 11434,
+          path: url.pathname,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+          },
+          timeout: timeoutMs
+        }, (res) => {
+          clearTimeout(timeoutId);
+
+          let data = '';
+          res.on('data', (chunk) => {
+            if (cancelled) {
+              res.destroy();
+              reject(new Error('Request cancelled'));
+              return;
+            }
+            data += chunk;
+          });
+
+          res.on('end', () => {
+            if (res.statusCode !== 200) {
+              reject(new Error(`Ollama API Error: ${res.statusCode} - ${data}`));
+            } else {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                reject(new Error(`Failed to parse response: ${e}`));
+              }
+            }
+          });
+        });
+
+        req.on('error', (err) => {
+          clearTimeout(timeoutId);
+          reject(err);
+        });
+
+        req.on('timeout', () => {
+          req.destroy();
+          reject(new Error('Request timeout'));
+        });
+
+        req.write(postData);
+        req.end();
+      });
+
+      this.retryCount = 0;
+      const content = response.response || '';
+
+      return {
+        content,
+        usage: {
+          inputTokens: 0,
+          outputTokens: 0,
+        },
+      };
+
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.log(`Ollama Request Failed after ${duration}ms. Cancelled: ${cancelled}`, 'error');
+
+      if (error instanceof Error) {
+        this.log(`Error: ${error.message}`, 'error');
+      } else {
+        this.log(`Unknown Error: ${JSON.stringify(error)}`, 'error');
+      }
+
+      if (cancelled) throw new Error('Request cancelled');
+      throw error;
+    } finally {
+      cancellationListener?.dispose();
+    }
+  }
+
   private async requestGeminiCompletion(
     options: AIRequestOptions,
     cancellationToken?: vscode.CancellationToken
   ): Promise<AIResponse> {
-    const timeoutMs = options.timeoutMs || 5000;
+    const timeoutMs = options.timeoutMs || 60000;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     let cancelled = false;
@@ -113,7 +250,7 @@ export class AIClient {
 
     } catch (error) {
       if (cancelled) throw new Error('Request cancelled');
-      if (error instanceof Error && error.name === 'AbortError') throw new Error('Request timeout');
+      if (error instanceof Error && error.name === 'AbortError') throw new Error(`Request timeout ${error.message}`);
       throw error;
     } finally {
       clearTimeout(timeoutId);
@@ -125,7 +262,7 @@ export class AIClient {
     options: AIRequestOptions,
     cancellationToken?: vscode.CancellationToken
   ): Promise<AIResponse> {
-    const timeoutMs = options.timeoutMs || 5000;
+    const timeoutMs = options.timeoutMs || 60000;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     let cancelled = false;

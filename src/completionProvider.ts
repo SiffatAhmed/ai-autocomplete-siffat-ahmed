@@ -53,8 +53,8 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
   /**
    * Initialize the provider with API key
    */
-  init(claudeApiKey: string, geminiApiKey: string): void {
-    this.aiClient = new AIClient({ claude: claudeApiKey, gemini: geminiApiKey });
+  init(claudeApiKey: string, geminiApiKey: string, ollamaConfig?: { baseUrl: string; model: string }): void {
+    this.aiClient = new AIClient({ claude: claudeApiKey, gemini: geminiApiKey }, ollamaConfig);
   }
 
   /**
@@ -75,18 +75,26 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
     }
 
     // Check if API is configured
+    // Check if API is configured
     const isGemini = config.model.toLowerCase().includes('gemini');
     const isClaude = config.model.toLowerCase().includes('claude');
-    const hasKey = (isGemini && config.geminiApiKey) || (isClaude && config.claudeApiKey);
+    const isOllama = config.model.toLowerCase().includes('ollama');
+    const hasKey = (isGemini && config.geminiApiKey) || (isClaude && config.claudeApiKey) || (isOllama && config.ollamaBaseUrl);
 
     if (!this.aiClient || !hasKey) {
       if (!this.notificationShown) {
+        const providerName = isGemini ? 'Gemini' : (isOllama ? 'Ollama' : 'Claude');
+        const configName = isOllama ? 'Base URL' : 'API Key';
         vscode.window.showWarningMessage(
-          `AI Autocomplete: ${isGemini ? 'Gemini' : 'Claude'} API key not configured`,
-          'Set API Key'
+          `AI Autocomplete: ${providerName} ${configName} not configured`,
+          `Set ${configName}`
         ).then((selection) => {
-          if (selection === 'Set API Key') {
-            vscode.commands.executeCommand('aiAutocomplete.setApiKey');
+          if (selection === `Set ${configName}`) {
+            if (isOllama) {
+              vscode.commands.executeCommand('aiAutocomplete.setOllamaBaseUrl');
+            } else {
+              vscode.commands.executeCommand('aiAutocomplete.setApiKey');
+            }
           }
         });
         this.notificationShown = true;
@@ -159,6 +167,8 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
         this.updateStatusBar();
         if (error instanceof Error) {
           this.aiClient?.log(`Manual trigger error: ${error.message}`, 'error');
+          // Explicitly show error message to window if it's a manual trigger
+          vscode.window.showErrorMessage(`AI Autocomplete Error: ${error.message}`);
         }
         return undefined;
       }
@@ -253,6 +263,9 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
       const systemPrompt = ContextManager.getSystemPrompt(context.languageId);
       const userPrompt = ContextManager.buildUserPrompt(context);
 
+      this.aiClient?.log(`[CompletionProvider] Requesting completion for model: ${config.model}`, 'info');
+      this.aiClient?.log(`[CompletionProvider] AIClient exists: ${!!this.aiClient}`, 'info');
+
       const response = await this.aiClient.requestCompletion(
         {
           model: config.model,
@@ -260,7 +273,6 @@ export class AICompletionProvider implements vscode.InlineCompletionItemProvider
           temperature: config.temperature,
           systemPrompt,
           userPrompt,
-          timeoutMs: 5000,
         },
         token
       );

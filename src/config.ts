@@ -8,6 +8,8 @@ export interface AIConfig {
   model: string;
   temperature: number;
   debounceDelay: number;
+  ollamaBaseUrl: string;
+  ollamaModel: string;
 }
 
 export class ConfigManager {
@@ -51,6 +53,8 @@ export class ConfigManager {
       model: config.get<string>('model') || 'claude-3-5-haiku-20241022',
       temperature: config.get<number>('temperature') ?? 0.2,
       debounceDelay: config.get<number>('debounceDelay') || 300,
+      ollamaBaseUrl: config.get<string>('ollamaBaseUrl') || 'http://localhost:11434',
+      ollamaModel: config.get<string>('ollamaModel') || 'gemma3:1b',
     };
   }
 
@@ -88,6 +92,16 @@ export class ConfigManager {
     await config.update('debounceDelay', delay, vscode.ConfigurationTarget.Global);
   }
 
+  static async setOllamaBaseUrl(url: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
+    await config.update('ollamaBaseUrl', url, vscode.ConfigurationTarget.Global);
+  }
+
+  static async setOllamaModel(model: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
+    await config.update('ollamaModel', model, vscode.ConfigurationTarget.Global);
+  }
+
   static async toggleEnabled(): Promise<void> {
     const config = vscode.workspace.getConfiguration(this.CONFIG_NAMESPACE);
     const currentState = config.get<boolean>('enabled') ?? true;
@@ -96,7 +110,7 @@ export class ConfigManager {
 
   static async isConfigured(): Promise<boolean> {
     const config = await this.getConfig();
-    return config.claudeApiKey.length > 0 || config.geminiApiKey.length > 0;
+    return config.claudeApiKey.length > 0 || config.geminiApiKey.length > 0 || config.model.startsWith('ollama') || config.ollamaBaseUrl.length > 0;
   }
 
   static onConfigChange(callback: () => void): vscode.Disposable {

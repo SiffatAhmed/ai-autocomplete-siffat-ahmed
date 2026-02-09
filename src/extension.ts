@@ -39,7 +39,14 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Get initial configuration
   ConfigManager.getConfig().then((config) => {
-    completionProvider?.init(config.claudeApiKey, config.geminiApiKey);
+    completionProvider?.init(
+      config.claudeApiKey,
+      config.geminiApiKey,
+      {
+        baseUrl: config.ollamaBaseUrl,
+        model: config.ollamaModel
+      }
+    );
   });
 
   // Register inline completion provider for supported languages
@@ -98,6 +105,49 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }
   });
+
+  const setOllamaBaseUrlCommand = vscode.commands.registerCommand('aiAutocomplete.setOllamaBaseUrl', async () => {
+    const config = await ConfigManager.getConfig();
+    const currentUrl = config.ollamaBaseUrl;
+
+    const input = await vscode.window.showInputBox({
+      prompt: 'Set Ollama Base URL',
+      value: currentUrl,
+      placeHolder: 'http://localhost:11434',
+    });
+
+    if (input !== undefined) {
+      try {
+        await ConfigManager.setOllamaBaseUrl(input);
+        vscode.window.showInformationMessage(`AI Autocomplete: Ollama Base URL set to ${input}`);
+      } catch (error) {
+        vscode.window.showErrorMessage('Failed to set Ollama Base URL');
+      }
+    }
+  });
+
+  const setOllamaModelCommand = vscode.commands.registerCommand('aiAutocomplete.setOllamaModel', async () => {
+    const config = await ConfigManager.getConfig();
+    const currentModel = config.ollamaModel;
+
+    const input = await vscode.window.showInputBox({
+      prompt: 'Set Ollama Model',
+      value: currentModel,
+      placeHolder: 'gemma3:1b', // Updated default as per request
+    });
+
+    if (input !== undefined) {
+      try {
+        await ConfigManager.setOllamaModel(input);
+        vscode.window.showInformationMessage(`AI Autocomplete: Ollama Model set to ${input}`);
+      } catch (error) {
+        vscode.window.showErrorMessage('Failed to set Ollama Model');
+      }
+    }
+  });
+
+  context.subscriptions.push(setOllamaBaseUrlCommand);
+  context.subscriptions.push(setOllamaModelCommand);
 
   const selectModelCommand = vscode.commands.registerCommand('aiAutocomplete.selectModel', async () => {
     const models = [
@@ -170,6 +220,11 @@ export function activate(context: vscode.ExtensionContext) {
         label: 'Claude Haiku 3 (Legacy - $0.25/$1.25)',
         value: 'claude-3-haiku-20240307',
         pricing: { input: '$0.25', output: '$1.25', cache5m: '$0.30', cache1h: '$0.50', cacheHit: '$0.03' }
+      },
+      {
+        label: 'Ollama (Local)',
+        value: 'ollama',
+        pricing: { input: 'Free', output: 'Free', cache5m: 'NA', cache1h: 'NA', cacheHit: 'NA' }
       },
     ];
 
@@ -282,8 +337,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Check if API key is configured
     const config = await ConfigManager.getConfig();
-    const isGemini = config.model.startsWith('gemini');
-    const isClaude = config.model.startsWith('claude');
+    const isGemini = config.model.toLowerCase().startsWith('gemini');
+    const isClaude = config.model.toLowerCase().startsWith('claude');
+    const isOllama = config.model.toLowerCase().startsWith('ollama');
 
     if ((isGemini && !config.geminiApiKey) || (isClaude && !config.claudeApiKey)) {
       const result = await vscode.window.showWarningMessage(
@@ -292,6 +348,17 @@ export function activate(context: vscode.ExtensionContext) {
       );
       if (result === 'Set API Key') {
         await vscode.commands.executeCommand('aiAutocomplete.setApiKey');
+      }
+      return;
+    }
+
+    if (isOllama && !config.ollamaBaseUrl) {
+      const result = await vscode.window.showWarningMessage(
+        'AI Autocomplete: Ollama Base URL not configured',
+        'Set Base URL'
+      );
+      if (result === 'Set Base URL') {
+        await vscode.commands.executeCommand('aiAutocomplete.setOllamaBaseUrl');
       }
       return;
     }
@@ -370,7 +437,14 @@ export function activate(context: vscode.ExtensionContext) {
   // Listen for configuration changes
   configChangeDisposable = ConfigManager.onConfigChange(async () => {
     const config = await ConfigManager.getConfig();
-    completionProvider?.init(config.claudeApiKey, config.geminiApiKey);
+    completionProvider?.init(
+      config.claudeApiKey,
+      config.geminiApiKey,
+      {
+        baseUrl: config.ollamaBaseUrl,
+        model: config.ollamaModel
+      }
+    );
   });
 
   context.subscriptions.push(configChangeDisposable);
